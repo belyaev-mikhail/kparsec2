@@ -1,5 +1,6 @@
 package ru.spbstu
 
+import kotlinx.warnings.Warnings
 import ru.spbstu.Source.Companion.dropDefault
 
 interface Source<out T> {
@@ -50,6 +51,8 @@ fun Source<Char>.asCharSequence(): CharSequence = SourceAsCharSequence(this)
 
 abstract class Input<out T>(val source: Source<T>): Source<T> by source {
     abstract val location: Location<*>
+    abstract override fun advance(): Input<T>
+    abstract override fun drop(n: Int): Input<T>
 }
 
 class SimpleInput<out T>(source: Source<T>, override val location: Location<@UnsafeVariance T>): Input<T>(source) {
@@ -78,11 +81,18 @@ class ParsedSource<T, R>(val input: Input<T>, val parser: Parser<T, R>): Source<
 
     override fun hasNext(): Boolean = input.hasNext() && newResult is ParseSuccess
 
-    override fun advance(): Source<R> = ParsedSource(newResult.restOrThrow, parser)
+    override fun advance(): ParsedSource<T, R> = ParsedSource(newResult.restOrThrow, parser)
+    override fun drop(n: Int): ParsedSource<T, R> = dropDefault(n)
 }
 
-class ParsedInput<T, R>(input: Input<T>,
-                        parser: Parser<T, R>): Input<R>(ParsedSource(input, parser)) {
+class ParsedInput<T, R>(source: ParsedSource<T, R>): Input<R>(source) {
+    @Suppress(Warnings.UNCHECKED_CAST)
+    private val parsedSource
+        inline get() = source as ParsedSource<T, R>
+
     override val location: Location<*>
-        get() = (source as ParsedSource<*, *>).input.location
+        get() = parsedSource.input.location
+
+    override fun advance(): ParsedInput<T, R> = ParsedInput(parsedSource.advance())
+    override fun drop(n: Int): ParsedInput<T, R> = ParsedInput(parsedSource.drop(n))
 }
