@@ -16,7 +16,7 @@ data class Error(override val expected: String,
                  override val found: String,
                  override val location: Location<*>): NoSuccess()
 
-class ParseException(result: NoSuccess): Exception("Failed to parse input: $result")
+class ParseException(val result: NoSuccess): Exception("Failed to parse input: $result")
 
 val <T, R> ParseResult<T, R>.successOrThrow: ParseSuccess<T, R>
     get() = when(this) {
@@ -37,5 +37,10 @@ inline fun <T, A, B> ParseResult<T, A>.map(body: (A) -> B): ParseResult<T, B> = 
 
 inline fun <T, A, B> ParseResult<T, A>.flatMap(body: (A) -> ParseResult<T, B>): ParseResult<T, B> = when(this) {
     is ParseSuccess -> body(result)
+    is NoSuccess -> this
+}
+
+inline fun <T, A, B> ParseResult<T, A>.chain(body: (A, Input<T>) -> ParseResult<T, B>): ParseResult<T, B> = when(this) {
+    is ParseSuccess -> body(result, rest)
     is NoSuccess -> this
 }
