@@ -1,6 +1,5 @@
 package ru.spbstu
 
-import kotlinx.warnings.Warnings
 import ru.spbstu.Source.Companion.dropDefault
 
 interface Source<out T> {
@@ -49,30 +48,6 @@ class SourceAsCharSequence(val source: Source<Char>,
 
 fun Source<Char>.asCharSequence(): CharSequence = SourceAsCharSequence(this)
 
-abstract class Input<out T>(val source: Source<T>): Source<T> by source {
-    abstract val location: Location<*>
-    abstract override fun advance(): Input<T>
-    abstract override fun drop(n: Int): Input<T>
-}
-
-class SimpleInput<out T>(source: Source<T>, override val location: Location<@UnsafeVariance T>): Input<T>(source) {
-    override fun advance(): SimpleInput<T> {
-        val current = source.current
-        return SimpleInput(source.advance(), location(current))
-    }
-
-    override fun drop(n: Int): SimpleInput<T> {
-        if (location.canSkip) {
-            return SimpleInput(source.drop(n), location.skip(n))
-        } else {
-            return dropDefault(n)
-        }
-    }
-}
-
-fun <T> Input<T>.failure(expected: String, actual: String): Failure = Failure(expected, actual, location)
-fun <T> Input<T>.error(expected: String, actual: String): Error = Error(expected, actual, location)
-
 class ParsedSource<T, R>(val input: Input<T>, val parser: Parser<T, R>): Source<R> {
     val newResult: ParseResult<T, R> by lazy { parser(input) }
 
@@ -85,14 +60,12 @@ class ParsedSource<T, R>(val input: Input<T>, val parser: Parser<T, R>): Source<
     override fun drop(n: Int): ParsedSource<T, R> = dropDefault(n)
 }
 
-class ParsedInput<T, R>(source: ParsedSource<T, R>): Input<R>(source) {
-    @Suppress(Warnings.UNCHECKED_CAST)
-    private val parsedSource
-        inline get() = source as ParsedSource<T, R>
+data class StringSource(val data: String, val currentIndex: Int = 0): Source<Char> {
+    override val current: Char
+        get() = data[currentIndex]
 
-    override val location: Location<*>
-        get() = parsedSource.input.location
+    override fun hasNext(): Boolean = currentIndex < data.length
 
-    override fun advance(): ParsedInput<T, R> = ParsedInput(parsedSource.advance())
-    override fun drop(n: Int): ParsedInput<T, R> = ParsedInput(parsedSource.drop(n))
+    override fun advance(): Source<Char> = copy(currentIndex = currentIndex + 1)
+    override fun drop(n: Int): Source<Char> = copy(currentIndex = currentIndex + n)
 }

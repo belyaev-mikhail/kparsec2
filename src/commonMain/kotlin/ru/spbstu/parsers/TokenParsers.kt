@@ -23,7 +23,7 @@ fun <T> choice(tokens: Set<T>): Parser<T, T> = run {
 
 fun <T> choice(vararg tokens: T): Parser<T, T> = choice(tokens.toSet())
 fun <T> choice(tokens: Iterator<T>): Parser<T, T> = choice(tokens.asSequence().toSet())
-fun <T> choice(tokens: Iterable<T>): Parser<T, T> = choice(tokens.asSequence().toSet())
+fun <T> choice(tokens: Iterable<T>): Parser<T, T> = choice(tokens.toSet())
 
 fun <T> sequence(iterator: Iterator<T>, expectedString: String = "<predicate>"): Parser<T, List<T>> = Parser {
     val result = mutableListOf<T>()
