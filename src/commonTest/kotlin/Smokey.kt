@@ -12,4 +12,10 @@ class Smokey {
         assertEquals('<', token('<')(inp).resultOrThrow)
         assertEquals(listOf('<', '<', '<'), sequence('<', '<', '<')(inp).resultOrThrow)
     }
+
+    @Test
+    fun lispyLisp() {
+
+    }
+
 }

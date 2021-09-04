@@ -17,13 +17,13 @@ inline fun <T> token(expectedString: String = "<predicate>", crossinline predica
     }
 }
 
-fun <T> choice(tokens: Set<T>): Parser<T, T> = run {
+fun <T> oneOf(tokens: Set<T>): Parser<T, T> = run {
     token("<one of $tokens>") { it in tokens }
 }
 
-fun <T> choice(vararg tokens: T): Parser<T, T> = choice(tokens.toSet())
-fun <T> choice(tokens: Iterator<T>): Parser<T, T> = choice(tokens.asSequence().toSet())
-fun <T> choice(tokens: Iterable<T>): Parser<T, T> = choice(tokens.toSet())
+fun <T> oneOf(vararg tokens: T): Parser<T, T> = oneOf(tokens.toSet())
+fun <T> oneOf(tokens: Iterator<T>): Parser<T, T> = oneOf(tokens.asSequence().toSet())
+fun <T> oneOf(tokens: Iterable<T>): Parser<T, T> = oneOf(tokens.toSet())
 
 fun <T> sequence(iterator: Iterator<T>, expectedString: String = "<predicate>"): Parser<T, List<T>> = Parser {
     val result = mutableListOf<T>()
@@ -46,3 +46,6 @@ fun <T> sequence(iterator: Iterator<T>, expectedString: String = "<predicate>"):
 fun <T> sequence(vararg tokens: T): Parser<T, List<T>> = sequence(tokens.iterator(), tokens.joinToString())
 fun <T> sequence(tokens: Iterable<T>): Parser<T, List<T>> = sequence(tokens.iterator(), tokens.joinToString())
 
+inline fun <T, R> choice(crossinline body: (T) -> Parser<T, R>): Parser<T, R> = Parser {
+    body(it.current).invoke(it.advance())
+}
