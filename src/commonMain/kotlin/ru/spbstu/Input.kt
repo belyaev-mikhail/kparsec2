@@ -16,11 +16,12 @@ class SimpleInput<out T>(source: Source<T>, override val location: Location<@Uns
         return SimpleInput(source.advance(), location(current))
     }
 
-    override fun drop(n: Int): SimpleInput<T> {
-        if (location.canSkip) {
-            return SimpleInput(source.drop(n), location.skip(n))
-        } else {
-            return dropDefault(n)
+    override fun drop(n: Int): SimpleInput<T> = when {
+        location.canSkip -> {
+            SimpleInput(source.drop(n), location.skip(n))
+        }
+        else -> {
+            dropDefault(n)
         }
     }
 }
