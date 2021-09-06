@@ -24,11 +24,16 @@ class SimpleInput<out T>(source: Source<T>, override val location: Location<@Uns
             dropDefault(n)
         }
     }
+
+    override fun toString(): String {
+        return "SimpleInput(source=$source,location=$location)"
+    }
 }
 
 fun <T> Input<T>.failure(expected: String, actual: String): Failure = Failure(expected, actual, location)
 fun <T> Input<T>.error(expected: String, actual: String): Error = Error(expected, actual, location)
 fun <T> Input<T>.unitSuccess() = ParseSuccess(this, Unit)
+fun <T, R> Input<T>.success(value: R) = ParseSuccess(this, value)
 
 class ParsedInput<T, R>(source: ParsedSource<T, R>): Input<R>(source) {
     @Suppress(Warnings.UNCHECKED_CAST)
@@ -43,3 +48,5 @@ class ParsedInput<T, R>(source: ParsedSource<T, R>): Input<R>(source) {
 }
 
 fun stringInput(data: String) = SimpleInput(StringSource(data), CharLocation())
+fun <T0, T1> parsedInput(input: Input<T0>, parser: Parser<T0, T1>, ignore: Parser<T0, Unit>? = null): Input<T1> =
+    ParsedInput(ParsedSource(input, parser, ignore))

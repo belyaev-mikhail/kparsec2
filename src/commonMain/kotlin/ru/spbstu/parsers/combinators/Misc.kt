@@ -1,8 +1,13 @@
 package ru.spbstu.parsers.combinators
 
 import ru.spbstu.*
+import kotlin.experimental.ExperimentalTypeInference
 
 infix fun <T, A> Parser<T, A>.named(name: String) = object : Parser<T, A> by this {
+    override fun toString(): String = name
+}
+
+fun <T, A> namedParser(name: String, parser: Parser<T, A>) = object : Parser<T, A> by parser {
     override fun toString(): String = name
 }
 
@@ -19,6 +24,8 @@ class DoScope<T>(input: Input<T>) {
     }
 }
 
+@OptIn(ExperimentalTypeInference::class)
+@BuilderInference
 inline fun <T, R> parserDo(crossinline body: DoScope<T>.() -> R): Parser<T, R> = Parser { input ->
     val scope = DoScope(input)
     try {
