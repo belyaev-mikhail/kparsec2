@@ -8,13 +8,13 @@ sealed class NoSuccess: ParseResult<Nothing, Nothing>() {
     abstract val location: Location<*>
 }
 
-data class Failure(override val expected: String,
-                   override val found: String,
-                   override val location: Location<*>): NoSuccess()
+data class ParseFailure(override val expected: String,
+                        override val found: String,
+                        override val location: Location<*>): NoSuccess()
 
-data class Error(override val expected: String,
-                 override val found: String,
-                 override val location: Location<*>): NoSuccess()
+data class ParseError(override val expected: String,
+                      override val found: String,
+                      override val location: Location<*>): NoSuccess()
 
 class ParseException(val result: NoSuccess): Exception("Failed to parse input: $result")
 

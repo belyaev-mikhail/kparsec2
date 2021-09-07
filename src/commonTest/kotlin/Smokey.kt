@@ -3,6 +3,7 @@ package ru.spbstu
 import ru.spbstu.parsers.combinators.*
 import ru.spbstu.parsers.combinators.oneOf
 import ru.spbstu.parsers.dsl.*
+import ru.spbstu.parsers.manyAsString
 import ru.spbstu.parsers.oneOf
 import ru.spbstu.parsers.sequence
 import ru.spbstu.parsers.token
@@ -26,16 +27,24 @@ class Smokey {
         override fun toString(): String = "RPAREN"
     }
     data class Identifier(val contents: String): Token()
-
-
+    data class IntegerConstant(val value: Int): Token()
+    data class BoolConstant(val value: Boolean): Token()
 
     @Test
     fun lispyLisp() {
         val lparen = token('(').map { LPAREN } named "("
         val rparen = sequence(")").map { RPAREN } named ")"
-        val identifier = manyOne(token { ch: Char -> ch.isLetterOrDigit() }).map { Identifier(it.joinToString("")) } named "identifier"
+
+        val iliteral = manyAsString(token { ch: Char -> ch.isDigit() })
+            .map { IntegerConstant(it.toInt()) } named "integer literal"
+        val bliteral = oneOf(
+            sequence("#t").map { BoolConstant(true) },
+            sequence("#f").map { BoolConstant(false) }
+        ) named "boolean literal"
+        val controlChars = "#() \t\r\n\"\'".toSet()
+        val identifier = manyAsString(token { ch: Char -> ch !in controlChars }).map { Identifier(it) } named "identifier"
         val spaces = many(oneOf(" \t\r\n")).ignoreResult()
-        val tok = oneOf(lparen, rparen, identifier)
+        val tok = oneOf(lparen, rparen, identifier, iliteral, bliteral)
 
         val si = parsedInput(stringInput("(aas ( a )  aasdas))  as ) asa"), tok, spaces)
 

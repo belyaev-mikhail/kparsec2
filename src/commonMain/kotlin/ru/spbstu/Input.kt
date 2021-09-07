@@ -30,8 +30,8 @@ class SimpleInput<out T>(source: Source<T>, override val location: Location<@Uns
     }
 }
 
-fun <T> Input<T>.failure(expected: String, actual: String): Failure = Failure(expected, actual, location)
-fun <T> Input<T>.error(expected: String, actual: String): Error = Error(expected, actual, location)
+fun <T> Input<T>.failure(expected: String, actual: String = "$current"): ParseFailure = ParseFailure(expected, actual, location)
+fun <T> Input<T>.error(expected: String, actual: String = "$current"): ParseError = ParseError(expected, actual, location)
 fun <T> Input<T>.unitSuccess() = ParseSuccess(this, Unit)
 fun <T, R> Input<T>.success(value: R) = ParseSuccess(this, value)
 

@@ -12,7 +12,7 @@ fun <T, R> peek(parser: Parser<T, R>): Parser<T, R> = Parser {
 fun <T> not(parser: Parser<T, Any?>): Parser<T, Unit> = Parser {
     when(val res = parser(it)) {
         is ParseSuccess -> it.failure("<not $parser>", it.current.toString())
-        is Failure -> it.unitSuccess()
-        is Error -> res
+        is ParseFailure -> it.unitSuccess()
+        is ParseError -> res
     }
 }

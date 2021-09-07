@@ -3,6 +3,7 @@ package ru.spbstu.parsers
 import ru.spbstu.*
 import ru.spbstu.parsers.combinators.map
 import ru.spbstu.parsers.combinators.namedParser
+import ru.spbstu.ParseError as ParseError
 
 fun <T> any(): Parser<T, T> = namedParser("<any>") {
     if (!it.hasNext()) return@namedParser it.failure("<any>", "<end of input>")
@@ -76,4 +77,12 @@ fun <T> sequence(tokens: Collection<T>): Parser<T, List<T>> = when(tokens.size) 
 
 inline fun <T, R> choice(crossinline body: (T) -> Parser<T, R>): Parser<T, R> = Parser {
     body(it.current).invoke(it.advance())
+}
+
+fun <T> not(tokenParser: Parser<T, T>): Parser<T, T> = Parser {
+    when(val result = tokenParser(it)) {
+        is ParseSuccess -> it.failure("!${result.result}", "${result.result}")
+        is ParseFailure -> ParseSuccess(it.advance(), it.current)
+        is ParseError -> result
+    }
 }

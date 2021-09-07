@@ -3,6 +3,7 @@ package ru.spbstu
 import ru.spbstu.Source.Companion.dropDefault
 import ru.spbstu.parsers.combinators.many
 import ru.spbstu.parsers.success
+import ru.spbstu.parsers.util.asCollection
 
 interface Source<out T> {
     val current: T
@@ -62,25 +63,6 @@ class SourceAsCharSequence(val source: Source<Char>,
 }
 
 fun Source<Char>.asCharSequence(): CharSequence = SourceAsCharSequence(this)
-
-fun StringBuilder.asCollection() = object : AbstractMutableCollection<Char>() {
-    override val size: Int
-        get() = length
-
-    override fun add(element: Char): Boolean {
-        append(element)
-        return true
-    }
-
-    inner class TheIterator : MutableIterator<Char> {
-        private var index = 0
-        override fun hasNext(): Boolean = index < length
-        override fun next(): Char = this@asCollection[index++]
-        override fun remove() { this@asCollection.deleteAt(index) }
-    }
-
-    override fun iterator(): MutableIterator<Char> = TheIterator()
-}
 
 fun Source<Char>.takeString(length: Int): String {
     val sb = StringBuilder()

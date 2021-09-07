@@ -10,9 +10,21 @@ inline fun <T, A, B> Parser<T, A>.flatMap(crossinline body: (A) -> Parser<T, B>)
     this(it).chain { result, rest -> body(result)(rest) }
 }
 
-inline fun <T, A> Parser<T, A>.filter(crossinline body: (A) -> Boolean): Parser<T, A> = Parser {
+inline fun <T, A> Parser<T, A>.filter(expected: String? = null, crossinline body: (A) -> Boolean): Parser<T, A> = Parser {
     val trye = this(it)
-    trye.flatMap { result -> if (body(result)) trye else it.failure("body", "") }
+    trye.flatMap { result -> if (body(result)) trye else it.failure(expected ?: "<predicate>") }
+}
+
+inline fun <T, A, B> Parser<T, A>.mapNotNull(expected: String? = null, crossinline body: (A) -> B?): Parser<T, B> = Parser { input ->
+    when(val tryout = this(input)) {
+        is NoSuccess -> tryout
+        is ParseSuccess -> {
+            when(val mapped = body(tryout.result)) {
+                null -> input.failure(expected ?: "<predicate>")
+                else -> tryout.map { mapped }
+            }
+        }
+    }
 }
 
 inline fun <T, A, B, C> zipWith(left: Parser<T, A>,
