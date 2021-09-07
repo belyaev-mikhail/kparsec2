@@ -24,8 +24,6 @@ class DoScope<T>(input: Input<T>) {
     }
 }
 
-@OptIn(ExperimentalTypeInference::class)
-@BuilderInference
 inline fun <T, R> parserDo(crossinline body: DoScope<T>.() -> R): Parser<T, R> = Parser { input ->
     val scope = DoScope(input)
     try {
@@ -39,4 +37,11 @@ inline fun <T, R> parserDo(crossinline body: DoScope<T>.() -> R): Parser<T, R> =
 fun <T, R> lazyParser(body: () -> Parser<T, R>): Parser<T, R> {
     val defer by lazy(body)
     return Parser { defer(it) }
+}
+
+fun <T, R> recursive(body: (Parser<T, R>) -> Parser<T, R>): Parser<T, R> {
+    var capture: Parser<T, R>? = null
+    val defer by lazy { body(capture!!) }
+    capture = Parser { defer(it) }
+    return capture
 }

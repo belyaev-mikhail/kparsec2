@@ -65,9 +65,14 @@ class Smokey {
             si.iterator().asSequence().toList()
         )
 
-        for (token in si) {
-            println(token)
+        val simpleExpr = token<Token> { it is Identifier || it is IntegerConstant || it is BoolConstant }
+        val lispExpr = recursive { self: Parser<Token, Token> ->
+            simpleExpr or (-token<Token>(LPAREN) + self + -token<Token>(RPAREN))
         }
+
+        val pinput = parsedInput(stringInput("(a (b))"), tok, spaces)
+        println(pinput.iterator().asSequence().joinToString())
+        println(lispExpr(pinput))
 
     }
 
