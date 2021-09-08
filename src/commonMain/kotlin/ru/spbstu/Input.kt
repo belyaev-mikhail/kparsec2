@@ -36,6 +36,12 @@ fun <T> Input<T>.error(expected: String, actual: String = "$current"): ParseErro
 fun <T> Input<T>.unitSuccess() = ParseSuccess(this, Unit)
 fun <T, R> Input<T>.success(value: R) = ParseSuccess(this, value)
 
+fun <T> Input<T>.readCurrentToken(): ParseResult<T, T> {
+    if (!hasNext()) return failure("<any token>", "<end of input>")
+    val token = current
+    return advance().success(token)
+}
+
 class ParsedInput<T, R>(source: ParsedSource<T, R>): Input<R>(source) {
     @Suppress(Warnings.UNCHECKED_CAST)
     private val parsedSource
