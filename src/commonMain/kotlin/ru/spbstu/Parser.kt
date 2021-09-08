@@ -1,9 +1,9 @@
 package ru.spbstu
 
-import kotlinx.warnings.Warnings
-
 fun interface Parser<T, out R> {
     operator fun invoke(input: Input<T>): ParseResult<T, R>
 
     companion object
 }
+
+fun <R> Parser<Char, R>.invoke(input: String): ParseResult<Char, R> = invoke(stringInput(input))

@@ -3,7 +3,6 @@ package ru.spbstu
 import kotlinx.warnings.Warnings
 import ru.spbstu.Source.Companion.dropDefault
 
-
 abstract class Input<out T>(val source: Source<T>): Source<T> by source {
     abstract val location: Location<*>
     abstract override fun advance(): Input<T>
@@ -30,8 +29,10 @@ class SimpleInput<out T>(source: Source<T>, override val location: Location<@Uns
     }
 }
 
-fun <T> Input<T>.failure(expected: String, actual: String = "$current"): ParseFailure = ParseFailure(expected, actual, location)
-fun <T> Input<T>.error(expected: String, actual: String = "$current"): ParseError = ParseError(expected, actual, location)
+fun <T> Input<T>.failure(expected: String, actual: String = "$current"): ParseFailure =
+    ParseFailure(expected, actual, location)
+fun <T> Input<T>.error(expected: String, actual: String = "$current"): ParseError =
+    ParseError(expected, actual, location)
 fun <T> Input<T>.unitSuccess() = ParseSuccess(this, Unit)
 fun <T, R> Input<T>.success(value: R) = ParseSuccess(this, value)
 

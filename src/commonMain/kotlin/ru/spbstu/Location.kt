@@ -27,7 +27,7 @@ data class CharLocation(val line: Int = 1, val col: Int = 0): Location<Char> {
 }
 
 @JvmInline
-value class OffsetLocation<T>(val offset: Int): Location<T> {
+value class OffsetLocation<T>(val offset: Int = 0): Location<T> {
     override fun invoke(token: T): OffsetLocation<T> = OffsetLocation(offset + 1)
     override fun toString(): String = "$offset"
 
