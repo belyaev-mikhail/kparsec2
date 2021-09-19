@@ -82,9 +82,33 @@ inline fun <T, A, M : MutableCollection<A>> manyOneTo(
 
 fun <T, A> manyOne(parser: Parser<T, A>): Parser<T, List<A>> = manyOneTo({ mutableListOf() }, parser)
 
-fun <T, A> optional(parser: Parser<T, A>): Parser<T, A?> = namedParser("$parser?") {
-    when (val res = parser(it)) {
-        is ParseFailure -> it.success(null)
-        else -> res
+inline fun <T, A> recover(base: Parser<T, A>, crossinline defaultValue: () -> A): Parser<T, A> =
+    namedParser("$base?") {
+        when (val res = base(it)) {
+            is ParseFailure -> it.success(defaultValue())
+            else -> res
+        }
     }
+
+fun <T, A> optional(parser: Parser<T, A>): Parser<T, A?> = recover(parser) { null }
+
+fun <T, A> repeat(n: Int, parser: Parser<T, A>): Parser<T, List<A>> = namedParser("$parser * $n") { input ->
+    if (n == 0) return@namedParser input.success(listOf())
+    var currentResult = parser(input)
+    val res = mutableListOf<A>()
+    kotlin.repeat(n - 1) {
+        val stableCurrentResult = currentResult
+        if (stableCurrentResult !is ParseSuccess) return@namedParser input.failure("$parser")
+        res += stableCurrentResult.result
+        currentResult = parser(stableCurrentResult.rest)
+    }
+    currentResult.map { res.apply { add(it) } }
 }
+
+fun <T, A> separatedBy(base: Parser<T, A>, sep: Parser<T, Unit>): Parser<T, List<A>> =
+    recover(
+        base.flatMap {
+            val acc = mutableListOf(it)
+            manyTo({ acc }, zipWith(sep, base) { _, r -> r })
+        }
+    ) { emptyList() }

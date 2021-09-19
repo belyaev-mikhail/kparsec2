@@ -11,7 +11,7 @@ fun <T> any(): Parser<T, T> = namedParser("<any>") {
     ParseSuccess(it.advance(), current)
 }
 
-fun <T> token(value: T): Parser<T, T> = namedParser("\"$value\"") {
+fun <T> token(value: T): Parser<T, T> = namedParser("$value") {
     if (!it.hasNext()) return@namedParser it.failure("$value", "<end of input>")
     when(val current = it.current) {
         value -> ParseSuccess(it.advance(), current)
@@ -27,6 +27,10 @@ inline fun <T> token(expectedString: String = "<predicate>", crossinline predica
         else -> it.failure(expectedString, "$current")
     }
 }
+
+inline fun <T, reified S: T> token(expectedString: String = "<predicate>"): Parser<T, S> =
+    @Suppress("UNCHECKED_CAST")
+    (token<T>(expectedString) { it is S } as Parser<T, S>)
 
 fun <T> oneOf(tokens: Set<T>): Parser<T, T> = when(tokens.size) {
     1 -> token(tokens.single())
@@ -74,6 +78,48 @@ fun <T> sequence(tokens: Collection<T>): Parser<T, List<T>> = when(tokens.size) 
         ParseSuccess(it.drop(tokens.size), sourceTokens)
     }
 }
+
+inline fun <T> manyOneTokens(
+                    expectedString: String = "<predicate>",
+                    crossinline pred: (T) -> Boolean): Parser<T, List<T>> =
+    namedParser(expectedString) {
+        val result = mutableListOf<T>()
+        var self = it
+        while(true) {
+            val current = self.current
+            when {
+                pred(current) -> {
+                    result += current
+                    self = self.advance()
+                }
+                else -> {
+                    if (result.isEmpty()) {
+                        return@namedParser it.failure(expectedString, "$current")
+                    } else break
+                }
+            }
+        }
+        ParseSuccess(self, result as List<T>)
+    }
+
+inline fun <T> manyTokens(
+    expectedString: String = "<predicate>",
+    crossinline pred: (T) -> Boolean): Parser<T, List<T>> =
+    namedParser(expectedString) {
+        val result = mutableListOf<T>()
+        var self = it
+        while(true) {
+            val current = self.current
+            when {
+                pred(current) -> {
+                    result += current
+                    self = self.advance()
+                }
+                else -> break
+            }
+        }
+        ParseSuccess(self, result as List<T>)
+    }
 
 inline fun <T, R> choice(crossinline body: (T) -> Parser<T, R>): Parser<T, R> = Parser {
     body(it.current).invoke(it.advance())

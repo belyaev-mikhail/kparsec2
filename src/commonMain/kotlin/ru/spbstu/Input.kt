@@ -11,7 +11,7 @@ abstract class Input<out T>(val source: Source<T>): Source<T> by source {
 
 class SimpleInput<out T>(source: Source<T>, override val location: Location<@UnsafeVariance T>): Input<T>(source) {
     override fun advance(): SimpleInput<T> {
-        val current = source.current
+        val current = source.currentOrNull ?: return this
         return SimpleInput(source.advance(), location(current))
     }
 
@@ -44,7 +44,7 @@ fun <T> Input<T>.readCurrentToken(): ParseResult<T, T> {
 
 class ParsedInput<T, R>(source: ParsedSource<T, R>): Input<R>(source) {
     @Suppress(Warnings.UNCHECKED_CAST)
-    private val parsedSource
+    internal val parsedSource
         inline get() = source as ParsedSource<T, R>
 
     override val location: Location<*>

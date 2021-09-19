@@ -1,9 +1,7 @@
 package ru.spbstu.parsers.dsl
 
 import ru.spbstu.Parser
-import ru.spbstu.parsers.combinators.ignoreResult
-import ru.spbstu.parsers.combinators.oneOf
-import ru.spbstu.parsers.combinators.zipWith
+import ru.spbstu.parsers.combinators.*
 import kotlin.jvm.JvmName
 
 operator fun <T, R> Parser<T, Iterable<R>>.plus(that: Parser<T, Iterable<R>>): Parser<T, List<R>> =
@@ -22,11 +20,11 @@ operator fun <T, R> Parser<T, R>.plus(that: Parser<T, R>): Parser<T, List<R>> =
     zipWith(this, that) { a, b -> listOf(a, b) }
 
 @JvmName("plusUnit")
-operator fun <T, R> Parser<T, Iterable<R>>.plus(that: Parser<T, Unit>): Parser<T, Iterable<R>> =
+operator fun <T, I: Iterable<Any?>> Parser<T, I>.plus(that: Parser<T, Unit>): Parser<T, I> =
     zipWith(this, that) { a, _ -> a }
 
 @JvmName("plusUnitReversed")
-operator fun <T, R> Parser<T, Unit>.plus(that: Parser<T, Iterable<R>>): Parser<T, Iterable<R>> =
+operator fun <T, I: Iterable<Any?>> Parser<T, Unit>.plus(that: Parser<T, I>): Parser<T, I> =
     zipWith(this, that) { _, b -> b }
 
 @JvmName("single-plus-unit")
@@ -44,3 +42,13 @@ operator fun <T> Parser<T, Unit>.plus(that: Parser<T, Unit>): Parser<T, Unit> =
 operator fun <T, R> Parser<T, R>.unaryMinus(): Parser<T, Unit> = ignoreResult()
 
 infix fun <T, R> Parser<T, R>.or(that: Parser<T, R>): Parser<T, R> = oneOf(this, that)
+
+operator fun <T, R> Parser<T, R>.not(): Parser<T, Unit> = not(this)
+
+operator fun <T, R> Parser<T, R>.times(n: Int): Parser<T, List<R>> = repeat(n, this)
+
+infix fun <T, R> Parser<T, R>.sepBy(separator: Parser<T, Unit>): Parser<T, List<R>> = separatedBy(this, separator)
+
+inline infix fun <T, R> Parser<T, R>.orElse(crossinline default: () -> R): Parser<T, R> =
+    recover(this, default)
+

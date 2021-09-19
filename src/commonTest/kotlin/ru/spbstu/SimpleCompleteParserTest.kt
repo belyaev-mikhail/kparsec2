@@ -1,5 +1,6 @@
-package ru.spbstu
+package ru.spbstu.ru.spbstu
 
+import ru.spbstu.*
 import ru.spbstu.parsers.combinators.*
 import ru.spbstu.parsers.combinators.oneOf
 import ru.spbstu.parsers.dsl.*
@@ -9,9 +10,8 @@ import ru.spbstu.parsers.sequence
 import ru.spbstu.parsers.token
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
-class Smokey {
+class SimpleCompleteParserTest {
     @Test
     fun smokeTest() {
         val inp = stringInput("<<<>>>")
@@ -19,16 +19,22 @@ class Smokey {
         assertEquals(listOf('<', '<', '<'), sequence('<', '<', '<')(inp).resultOrThrow)
     }
 
-    sealed class Token
-    object LPAREN: Token() {
+    sealed interface Token
+    object LPAREN: Token {
         override fun toString(): String = "LPAREN"
     }
-    object RPAREN: Token() {
+    object RPAREN: Token {
         override fun toString(): String = "RPAREN"
     }
-    data class Identifier(val contents: String): Token()
-    data class IntegerConstant(val value: Int): Token()
-    data class BoolConstant(val value: Boolean): Token()
+    data class Identifier(val contents: String): Token, LispValue
+    data class IntegerConstant(val value: Int): Token, LispValue
+    data class BoolConstant(val value: Boolean): Token, LispValue
+
+    sealed interface LispExpr
+    data class LispList(val children: List<LispExpr>): LispExpr, List<LispExpr> by children {
+        constructor(vararg children: LispExpr): this(children.asList())
+    }
+    sealed interface LispValue: LispExpr
 
     @Test
     fun lispyLisp() {
@@ -66,14 +72,22 @@ class Smokey {
         )
 
         val simpleExpr = token<Token> { it is Identifier || it is IntegerConstant || it is BoolConstant }
-        val lispExpr = recursive { self: Parser<Token, Token> ->
-            simpleExpr or (-token<Token>(LPAREN) + self + -token<Token>(RPAREN))
+            .map { it as LispValue }
+        val lispExpr = recursive { self: Parser<Token, LispExpr> ->
+            simpleExpr or (-token<Token>(LPAREN) + many(self).map(SimpleCompleteParserTest::LispList) + -token<Token>(RPAREN))
         }
 
-        val pinput = parsedInput(stringInput("(a (b))"), tok, spaces)
+        val pinput = parsedInput(stringInput("(a (b c))"), tok, spaces)
         println(pinput.iterator().asSequence().joinToString())
         println(lispExpr(pinput))
 
+        assertEquals(
+            LispList(
+                Identifier("a"),
+                LispList(Identifier("b"), Identifier("c"))
+            ),
+            lispExpr(pinput).resultOrThrow
+        )
     }
 
 }
