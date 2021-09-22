@@ -11,24 +11,19 @@ fun <T> any(): Parser<T, T> = namedParser("<any>") {
     ParseSuccess(it.advance(), current)
 }
 
-fun <T> token(value: T): Parser<T, T> = namedParser("$value") {
-    if (!it.hasNext()) return@namedParser it.failure("$value", "<end of input>")
-    when(val current = it.current) {
-        value -> ParseSuccess(it.advance(), current)
-        else -> it.failure("$value", "$current")
+inline fun <T> token(expectedString: String = "<predicate>", crossinline predicate: (T) -> Boolean): Parser<T, T> =
+    namedParser(expectedString) {
+        if (!it.hasNext()) return@namedParser it.failure(expectedString, "<end of input>")
+        val current = it.current
+        when {
+            predicate(current) -> ParseSuccess(it.advance(), current)
+            else -> it.failure(expectedString, "$current")
+        }
     }
-}
 
-inline fun <T> token(expectedString: String = "<predicate>", crossinline predicate: (T) -> Boolean): Parser<T, T> = namedParser(expectedString) {
-    if (!it.hasNext()) return@namedParser it.failure(expectedString, "<end of input>")
-    val current = it.current
-    when {
-        predicate(current) -> ParseSuccess(it.advance(), current)
-        else -> it.failure(expectedString, "$current")
-    }
-}
+fun <T> token(value: T): Parser<T, T> = token("$value") { it == value }
 
-inline fun <T, reified S: T> token(expectedString: String = "<predicate>"): Parser<T, S> =
+inline fun <T, reified S: T> token(expectedString: String = "${S::class}"): Parser<T, S> =
     @Suppress("UNCHECKED_CAST")
     (token<T>(expectedString) { it is S } as Parser<T, S>)
 
@@ -43,23 +38,24 @@ fun <T> oneOf(vararg tokens: T): Parser<T, T> = when(tokens.size) {
 }
 fun <T> oneOf(tokens: Iterable<T>): Parser<T, T> = oneOf(tokens.toSet())
 
-fun <T> sequence(iterator: Iterable<T>, expectedString: String = "<predicate>"): Parser<T, List<T>> = namedParser(expectedString) {
-    val result = mutableListOf<T>()
-    var self = it
-    for (element in iterator) {
-        when (val current = self.current) {
-            element -> {
-                result += current
-                self = self.advance()
-            }
-            else -> {
-                result += current
-                return@namedParser it.failure(expectedString, "$result")
+fun <T> sequence(iterator: Iterable<T>, expectedString: String = "<predicate>"): Parser<T, List<T>> =
+    namedParser(expectedString) {
+        val result = mutableListOf<T>()
+        var self = it
+        for (element in iterator) {
+            when (val current = self.current) {
+                element -> {
+                    result += current
+                    self = self.advance()
+                }
+                else -> {
+                    result += current
+                    return@namedParser it.failure(expectedString, "$result")
+                }
             }
         }
+        ParseSuccess(self, result)
     }
-    ParseSuccess(self, result)
-}
 
 fun <T> sequence(vararg tokens: T): Parser<T, List<T>> = when(tokens.size) {
     1 -> token(tokens.single()).map { listOf(it) }

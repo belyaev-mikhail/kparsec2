@@ -1,7 +1,7 @@
 package ru.spbstu
 
-fun interface Parser<T, out R> {
-    operator fun invoke(input: Input<T>): ParseResult<T, R>
+fun interface Parser<in T, out R> {
+    operator fun invoke(input: Input<T>): ParseResult<@UnsafeVariance T, R>
 
     companion object
 }

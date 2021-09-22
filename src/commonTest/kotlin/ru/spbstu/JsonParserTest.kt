@@ -18,9 +18,12 @@ class JsonParserTest {
     object NullLiteral: Literal<Nothing?> {
         override val data: Nothing? = null
     }
-    enum class SyntaxToken(val rep: Char): Token {
+    enum class SyntaxToken(val rep: Char): Token, Parser<Token, Token> {
         LBracket('['), RBracket(']'),
         LBrace('{'), RBrace('}'), Comma(','), Colon(':');
+
+        val parser = token<Token> { this == it }
+        override fun invoke(input: Input<Token>): ParseResult<Token, Token> = parser.invoke(input)
 
         companion object {
             val charMap: Map<Char, SyntaxToken> = values().associateBy { it.rep }
@@ -117,7 +120,7 @@ class JsonParserTest {
         val arr = -syntaxToken('[') + manyExpr.map(::JsonArray) + -syntaxToken(']')
         val objEntry = zipWith(
             token<Token, StringLiteral>(),
-            token(SyntaxToken.Colon),
+            token<Token>(SyntaxToken.Colon),
             expr) { key, _, value -> key.data to value }
 
         val obj = -syntaxToken('{') +

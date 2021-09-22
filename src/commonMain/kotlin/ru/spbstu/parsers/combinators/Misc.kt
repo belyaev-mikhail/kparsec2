@@ -22,6 +22,8 @@ class DoScope<T>(input: Input<T>) {
         input = res.rest
         return res.result
     }
+
+    fun <A> parse(parser: Parser<T, A>): A = parser()
 }
 
 inline fun <T, R> parserDo(crossinline body: DoScope<T>.() -> R): Parser<T, R> = Parser { input ->
