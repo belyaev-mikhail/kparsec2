@@ -89,7 +89,7 @@ class JsonParserTest {
             val char = unescaped or (-escape + (escapee or uescapee))
             val string = -quote + manyAsString(char) + -quote
         }
-        val string = StringGrammar.string.map(::StringLiteral)
+        val string = StringGrammar.string.map { StringLiteral(it.toString()) }
 
         val nullLit = sequence("null").map { NullLiteral }
         val syntaxToken = oneOf(SyntaxToken.charMap.keys).map { SyntaxToken.valueOf(it)!! }

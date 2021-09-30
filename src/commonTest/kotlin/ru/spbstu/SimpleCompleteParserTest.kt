@@ -42,13 +42,13 @@ class SimpleCompleteParserTest {
         val rparen = sequence(")").map { RPAREN } named ")"
 
         val iliteral = manyAsString(token { ch: Char -> ch.isDigit() })
-            .map { IntegerConstant(it.toInt()) } named "integer literal"
+            .map { IntegerConstant(it.toString().toInt()) } named "integer literal"
         val bliteral = oneOf(
             sequence("#t").map { BoolConstant(true) },
             sequence("#f").map { BoolConstant(false) }
         ) named "boolean literal"
         val controlChars = "#() \t\r\n\"\'".toSet()
-        val identifier = manyAsString(token { ch: Char -> ch !in controlChars }).map { Identifier(it) } named "identifier"
+        val identifier = manyAsString(token { ch: Char -> ch !in controlChars }).map { Identifier(it.toString()) } named "identifier"
         val spaces = many(oneOf(" \t\r\n")).ignoreResult()
         val tok = oneOf(lparen, rparen, identifier, iliteral, bliteral)
 

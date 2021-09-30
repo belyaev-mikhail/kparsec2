@@ -23,7 +23,7 @@ fun sequence(tokens: String): Parser<Char, String> = when(tokens.length) {
 inline fun manyAsString(expected: String, crossinline pred: (Char) -> Boolean): Parser<Char, String> =
     manyTokens(expected, pred).map { it.joinToString(separator = "") }
 
-fun <T> manyAsString(token: Parser<T, Char>): Parser<T, CharSequence> = run {
+fun <T> manyAsString(token: Parser<T, Char>): Parser<T, CharSequence> = parser {
     val sb = StringBuilder()
     manyAndForEach(sb, token) { sb.append(it) }
 }

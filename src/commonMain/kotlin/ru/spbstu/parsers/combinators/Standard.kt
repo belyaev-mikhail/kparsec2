@@ -81,7 +81,7 @@ internal inline fun <T, A, R> manyOneAndForEach(
     manyAndForEach(result, parser, body)
 }
 
-fun <T, A> many(parser: Parser<T, A>): Parser<T, List<A>> = run {
+fun <T, A> many(parser: Parser<T, A>): Parser<T, List<A>> = parser {
     val res = mutableListOf<A>()
     manyAndForEach(res, parser) { res.add(it) }
 }
