@@ -18,8 +18,10 @@ object NoLocation: Location<Any?> {
 }
 
 data class CharLocation(val line: Int = 1, val col: Int = 0): Location<Char> {
-    override fun invoke(token: Char): CharLocation = when(token) {
-        '\n' -> copy(line = line + 1, col = 0)
+    override fun invoke(token: Char): CharLocation = when {
+        run { token } == '\n' -> { // without run {} this triggers a strange bug, resulting in false in js-legacy-node
+            copy(line = line + 1, col = 0)
+        }
         else -> copy(col = col + 1)
     }
 

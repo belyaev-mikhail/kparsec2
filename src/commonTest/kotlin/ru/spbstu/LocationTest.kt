@@ -20,7 +20,14 @@ class LocationTest {
 
     fun finalLocus(loc: Location<Char>): Location<Char> {
         var acc = loc
-        for (ch in text) acc = acc(ch)
+        for (ch in text) {
+            println(ch)
+            println(acc)
+            if ((ch == '\n')) {
+                println("!")
+            }
+            acc = acc(ch)
+        }
         return acc
     }
 
