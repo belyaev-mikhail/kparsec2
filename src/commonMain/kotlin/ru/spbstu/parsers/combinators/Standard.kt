@@ -15,91 +15,67 @@ fun <T, A> oneOf(parsers: Iterable<Parser<T, A>>): Parser<T, A> = Parser {
 
 fun <T, A> oneOf(vararg parsers: Parser<T, A>): Parser<T, A> = oneOf(parsers.asList())
 
-fun <T, A> sequence(parsers: Iterable<Parser<T, A>>): Parser<T, List<A>> = Parser {
-    val result = mutableListOf<A>()
+internal inline
+fun <T, A, Ctx> sequenceFold(crossinline initialContext: () -> Ctx,
+                             parsers: Iterable<Parser<T, A>>,
+                             crossinline body: Ctx.(A) -> Ctx): Parser<T, Ctx> = Parser {
     var self = it
+    var context = initialContext()
     for (element in parsers) {
         when (val current = element(self)) {
             is ParseSuccess -> {
-                result += current.result
+                context = body(context, current.result)
                 self = current.rest
             }
             is NoSuccess -> return@Parser current
         }
     }
-    ParseSuccess(self, result)
+    ParseSuccess(self, context)
 }
+
+internal inline
+fun <T, A, Ctx> manyFold(crossinline initialContext: () -> Ctx,
+                         parser: Parser<T, A>,
+                         crossinline body: Ctx.(A) -> Ctx): Parser<T, Ctx> = namedParser("${parser}*") {
+    var self = it
+    var context = initialContext()
+    do {
+        when (val current = parser(self)) {
+            is ParseSuccess -> {
+                context = body(context, current.result)
+                if (current.rest === self) break // do not attempt to repeat non-consuming parsers
+                self = current.rest
+            }
+            is ParseFailure -> break
+            is ParseError -> return@namedParser current
+        }
+    } while (self.hasNext())
+    ParseSuccess(self, context)
+}
+
+internal inline
+fun <T, A, Ctx> manyOneFold(crossinline initialContext: () -> Ctx,
+                            parser: Parser<T, A>,
+                            crossinline body: Ctx.(A) -> Ctx): Parser<T, Ctx> =
+    namedParser("${parser}+", parser.flatMap {
+        val ctx = body(initialContext(), it)
+        manyFold({ ctx }, parser, body)
+    })
+
+fun <T, A> sequence(parsers: Iterable<Parser<T, A>>): Parser<T, List<A>> =
+    sequenceFold({ mutableListOf() }, parsers) { apply { add(it) } }
 
 fun <T, A> sequence(vararg parsers: Parser<T, A>): Parser<T, List<A>> = sequence(parsers.asList())
 
-inline fun <T, A, M : MutableCollection<A>> manyTo(
-    crossinline collectionFactory: () -> M,
-    parser: Parser<T, A>
-): Parser<T, M> = Parser {
-    val collection = collectionFactory()
-    var self = it
-    do {
-        when (val current = parser(self)) {
-            is ParseSuccess -> {
-                collection += current.result
-                if (current.rest === self) break // do not attempt to repeat non-consuming parsers
-                self = current.rest
-            }
-            is ParseFailure -> break
-            is ParseError -> return@Parser current
-        }
-    } while (self.hasNext())
-    ParseSuccess(self, collection)
-}
-
-internal inline fun <T, A, R> manyAndForEach(
-    result: R,
-    parser: Parser<T, A>,
-    crossinline body: (A) -> Unit
-): Parser<T, R> = Parser {
-    var self = it
-    do {
-        when (val current = parser(self)) {
-            is ParseSuccess -> {
-                body(current.result)
-                if (current.rest === self) break // do not attempt to repeat non-consuming parsers
-                self = current.rest
-            }
-            is ParseFailure -> break
-            is ParseError -> return@Parser current
-        }
-    } while (self.hasNext())
-    self.success(result)
-}
-
-internal inline fun <T, A, R> manyOneAndForEach(
-    result: R,
-    parser: Parser<T, A>,
-    crossinline body: (A) -> Unit
-): Parser<T, R> = parser.flatMap {
-    body(it)
-    manyAndForEach(result, parser, body)
-}
-
-fun <T, A> many(parser: Parser<T, A>): Parser<T, List<A>> = parser {
-    val res = mutableListOf<A>()
-    manyAndForEach(res, parser) { res.add(it) }
-}
+fun <T, A> many(parser: Parser<T, A>): Parser<T, List<A>> =
+    manyFold({ mutableListOf() }, parser) { apply { add(it) } }
 
 @JvmName("manyUnit")
-fun <T> many(parser: Parser<T, Unit>): Parser<T, Unit> = manyAndForEach(Unit, parser) {}
+fun <T> many(parser: Parser<T, Unit>): Parser<T, Unit> =
+    manyFold({ Unit }, parser) {}
 
-inline fun <T, A, M : MutableCollection<A>> manyOneTo(
-    crossinline collectionFactory: () -> M,
-    parser: Parser<T, A>
-): Parser<T, M> = parser.flatMap { first ->
-    val collection = collectionFactory()
-    collection.add(first)
-    manyTo({ collection }, parser)
-}
-
-
-fun <T, A> manyOne(parser: Parser<T, A>): Parser<T, List<A>> = manyOneTo({ mutableListOf() }, parser)
+fun <T, A> manyOne(parser: Parser<T, A>): Parser<T, List<A>> =
+    manyOneFold({ mutableListOf() }, parser) { apply { add(it) } }
 
 inline fun <T, A> recover(base: Parser<T, A>, crossinline defaultValue: () -> A): Parser<T, A> =
     namedParser("$base?") {
@@ -128,6 +104,6 @@ fun <T, A> separatedBy(base: Parser<T, A>, sep: Parser<T, Unit>): Parser<T, List
     recover(
         base.flatMap {
             val acc = mutableListOf(it)
-            manyAndForEach(acc, zipWith(sep, base) { _, r -> r }) { acc += it }
+            manyFold({ acc }, zipWith(sep, base) { _, r -> r }) { add(it); this }
         }
     ) { emptyList() }

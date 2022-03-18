@@ -23,13 +23,11 @@ fun sequence(tokens: String): Parser<Char, String> = when(tokens.length) {
 inline fun manyAsString(expected: String, crossinline pred: (Char) -> Boolean): Parser<Char, String> =
     manyTokens(expected, pred).map { it.joinToString(separator = "") }
 
-fun <T> manyAsString(token: Parser<T, Char>): Parser<T, CharSequence> = parser {
-    val sb = StringBuilder()
-    manyAndForEach(sb, token) { sb.append(it) }
-}
+fun <T> manyAsString(token: Parser<T, Char>): Parser<T, CharSequence> =
+    manyFold({ StringBuilder() }, token) { append(it) }
 
-fun <T> manyOneAsString(token: Parser<T, Char>): Parser<T, String> =
-    manyOneTo({ StringBuilderCollection() }, token).map { it.concatToString() }
+fun <T> manyOneAsString(token: Parser<T, Char>): Parser<T, CharSequence> =
+    manyOneFold({ StringBuilder() }, token) { append(it) }
 
 @ExperimentalStdlibApi
 fun regex(re: Regex): Parser<Char, MatchResult> = namedParser("regex(${re.pattern})") body@{
