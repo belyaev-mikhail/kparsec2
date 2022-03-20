@@ -1,6 +1,7 @@
 package ru.spbstu.parsers
 
 import ru.spbstu.*
+import ru.spbstu.parsers.combinators.filter
 import ru.spbstu.parsers.combinators.map
 import ru.spbstu.parsers.combinators.namedParser
 import ru.spbstu.ParseError as ParseError
@@ -67,7 +68,7 @@ fun <T> sequence(tokens: Iterable<T>): Parser<T, List<T>> = when(tokens) {
 }
 fun <T> sequence(tokens: Collection<T>): Parser<T, List<T>> = when(tokens.size) {
     1 -> token(tokens.single()).map { listOf(it) }
-    else -> namedParser(tokens.toString()) {
+    else -> namedParser(tokens.joinToString(" ")) {
         val sourceTokens = mutableListOf<T>()
         it.takeTo(sourceTokens, tokens.size)
         if (sourceTokens != tokens) it.failure("$tokens", "$sourceTokens")
@@ -78,25 +79,7 @@ fun <T> sequence(tokens: Collection<T>): Parser<T, List<T>> = when(tokens.size) 
 inline fun <T> manyOneTokens(
                     expectedString: String = "<predicate>",
                     crossinline pred: (T) -> Boolean): Parser<T, List<T>> =
-    namedParser(expectedString) {
-        val result = mutableListOf<T>()
-        var self = it
-        while(true) {
-            val current = self.current
-            when {
-                pred(current) -> {
-                    result += current
-                    self = self.advance()
-                }
-                else -> {
-                    if (result.isEmpty()) {
-                        return@namedParser it.failure(expectedString, "$current")
-                    } else break
-                }
-            }
-        }
-        ParseSuccess(self, result as List<T>)
-    }
+    manyTokens(expectedString, pred).filter(expectedString) { it.size > 1 }
 
 inline fun <T> manyTokens(
     expectedString: String = "<predicate>",
@@ -104,7 +87,7 @@ inline fun <T> manyTokens(
     namedParser(expectedString) {
         val result = mutableListOf<T>()
         var self = it
-        while(true) {
+        while (self.hasNext()) {
             val current = self.current
             when {
                 pred(current) -> {

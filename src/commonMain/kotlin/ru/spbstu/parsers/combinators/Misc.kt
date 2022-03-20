@@ -24,8 +24,22 @@ class DoScope<T>(input: Input<T>) {
     }
 
     fun <A> parse(parser: Parser<T, A>): A = parser()
+    fun <A> tryParse(parser: Parser<T, A>): A? {
+        val res = parser(input)
+        when (res) {
+            is ParseError -> throw ParseException(res)
+            is ParseFailure -> return null
+            is ParseSuccess -> {
+                input = res.rest
+                return res.result
+            }
+
+        }
+    }
 }
 
+@OptIn(ExperimentalTypeInference::class)
+@BuilderInference
 inline fun <T, R> parserDo(crossinline body: DoScope<T>.() -> R): Parser<T, R> = Parser { input ->
     val scope = DoScope(input)
     try {

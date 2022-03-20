@@ -14,6 +14,8 @@ interface Source<out T> {
 
     val maxLength: Int? get() = null
 
+    override fun toString(): String
+
     companion object {
         fun <T, C: MutableCollection<@UnsafeVariance T>> Source<T>.takeDefault(accumulator: C, n: Int) {
             var self = this
@@ -93,9 +95,18 @@ class ParsedSource<T, R>(
 
     override fun advance(): ParsedSource<T, R> = ParsedSource(newResult.restOrThrow, parser, ignored)
     override fun drop(n: Int): ParsedSource<T, R> = dropDefault(n)
+
+    override fun toString(): String =
+        when {
+            !input.hasNext() -> ""
+            else -> when(val newResult = newResult) {
+                is ParseSuccess -> "${newResult.result}..."
+                is NoSuccess -> "Error: $newResult"
+            }
+        }
 }
 
-data class StringSource(val data: String, val currentIndex: Int = 0): Source<Char> {
+data class StringSource(val data: CharSequence, val currentIndex: Int = 0): Source<Char> {
     override val current: Char
         get() = data[currentIndex]
 
