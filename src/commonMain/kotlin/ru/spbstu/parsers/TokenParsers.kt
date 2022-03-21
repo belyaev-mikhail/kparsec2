@@ -12,25 +12,41 @@ fun <T> any(): Parser<T, T> = namedParser("<any>") {
     ParseSuccess(it.advance(), current)
 }
 
-inline fun <T> token(expectedString: String = "<predicate>", crossinline predicate: (T) -> Boolean): Parser<T, T> =
-    namedParser(expectedString) {
-        if (!it.hasNext()) return@namedParser it.failure(expectedString, "<end of input>")
-        val current = it.current
-        when {
-            predicate(current) -> ParseSuccess(it.advance(), current)
-            else -> it.failure(expectedString, "$current")
+abstract class PredicateTokenParser<T>(override val name: String): Parser<T, T>, NamedParser<T, T> {
+    abstract fun isValid(token: T): Boolean
+    override fun invoke(input: Input<T>): ParseResult<T, T> {
+        if (!input.hasNext()) return input.failure()
+        val current = input.current
+        return when {
+            isValid(current) -> ParseSuccess(input.advance(), current)
+            else -> input.failure()
         }
     }
+}
 
-fun <T> token(value: T): Parser<T, T> = token("$value") { it == value }
+inline fun <T> token(expectedString: String = "<predicate>", crossinline predicate: (T) -> Boolean): Parser<T, T> =
+    object : PredicateTokenParser<T>(expectedString) {
+        override fun isValid(token: T): Boolean = predicate(token)
+    }
+
+data class TokenEqualityParser<T>(val expected: T): PredicateTokenParser<T>("$expected") {
+    override fun isValid(token: T): Boolean = token == expected
+}
+
+fun <T> token(value: T): Parser<T, T> = TokenEqualityParser(value)
 
 inline fun <T, reified S: T> token(expectedString: String = "${S::class}"): Parser<T, S> =
-    @Suppress("UNCHECKED_CAST")
-    (token<T>(expectedString) { it is S } as Parser<T, S>)
+    object : PredicateTokenParser<T>(expectedString) {
+        override fun isValid(token: T): Boolean = token is S
+    }.let { @Suppress("UNCHECKED_CAST") (it as Parser<T, S>) }
+
+data class TokenOneOfParser<T>(val expected: Set<T>): PredicateTokenParser<T>("<one of $expected>") {
+    override fun isValid(token: T): Boolean = token in expected
+}
 
 fun <T> oneOf(tokens: Set<T>): Parser<T, T> = when(tokens.size) {
     1 -> token(tokens.single())
-    else -> token("<one of $tokens>") { it in tokens }
+    else -> TokenOneOfParser(tokens)
 }
 
 fun <T> oneOf(vararg tokens: T): Parser<T, T> = when(tokens.size) {
