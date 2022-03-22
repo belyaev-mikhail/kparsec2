@@ -28,7 +28,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-common"))
                 implementation("ru.spbstu:kotlinx-warnings:${getKotlinPluginVersion()}")
-
+                implementation("ru.spbstu:kotlin-wheels:0.0.1.3")
             }
         }
         commonTest {

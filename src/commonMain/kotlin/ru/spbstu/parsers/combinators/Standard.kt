@@ -1,37 +1,68 @@
+@file:OptIn(ExperimentalStdlibApi::class)
+
 package ru.spbstu.parsers.combinators
 
 import ru.spbstu.*
 import kotlin.jvm.JvmName
 
-fun <T, A> oneOf(parsers: Iterable<Parser<T, A>>): Parser<T, A> = Parser {
-    for (parser in parsers) {
-        when (val res = parser(it)) {
-            is ParseSuccess -> return@Parser res
-            else -> continue
+class OneOfParser<T, A>(val parsers: Iterable<Parser<T, A>>):
+        Parser<T, A>,
+        AbstractNamedParser<T, A>(parsers.joinToString(" | ")) {
+    override fun invoke(input: Input<T>): ParseResult<T, A> {
+        for (parser in parsers) {
+            when (val res = parser(input)) {
+                is ParseSuccess -> return res
+                else -> continue
+            }
         }
+        return input.failure()
     }
-    it.failure("<one of ${parsers}>", it.currentOrNull?.toString() ?: "<end of input>")
 }
 
+fun <T, A> oneOf(parsers: Iterable<Parser<T, A>>): Parser<T, A> = OneOfParser(
+    buildList {
+        for (parser in parsers) when (parser) {
+            is OneOfParser -> addAll(parser.parsers)
+            else -> add(parser)
+        }
+    }
+)
+
 fun <T, A> oneOf(vararg parsers: Parser<T, A>): Parser<T, A> = oneOf(parsers.asList())
+
+abstract class SequenceFoldParser<T, A, Ctx>(val parsers: Iterable<Parser<T, A>>):
+        Parser<T, Ctx>,
+        NamedParser<T, Ctx> {
+    abstract fun initialContext(): Ctx
+    abstract fun Ctx.body(value: A): Ctx
+
+    override val name: String = parsers.joinToString(" ")
+    override fun toString(): String = name
+
+    override fun invoke(input: Input<T>): ParseResult<T, Ctx> {
+        var self = input
+        var context = initialContext()
+        for (element in parsers) {
+            when (val current = element(self)) {
+                is ParseSuccess -> {
+                    context = context.body(current.result)
+                    self = current.rest
+                }
+                is NoSuccess -> return current
+            }
+        }
+        return self.success(context)
+    }
+}
 
 internal inline
 fun <T, A, Ctx> sequenceFold(crossinline initialContext: () -> Ctx,
                              parsers: Iterable<Parser<T, A>>,
-                             crossinline body: Ctx.(A) -> Ctx): Parser<T, Ctx> = Parser {
-    var self = it
-    var context = initialContext()
-    for (element in parsers) {
-        when (val current = element(self)) {
-            is ParseSuccess -> {
-                context = body(context, current.result)
-                self = current.rest
-            }
-            is NoSuccess -> return@Parser current
-        }
+                             crossinline body: Ctx.(A) -> Ctx): Parser<T, Ctx> =
+    object: SequenceFoldParser<T, A, Ctx>(parsers) {
+        override fun initialContext(): Ctx = initialContext.invoke()
+        override fun Ctx.body(value: A): Ctx = body.invoke(this, value)
     }
-    ParseSuccess(self, context)
-}
 
 internal inline
 fun <T, A, Ctx> manyFold(crossinline initialContext: () -> Ctx,
