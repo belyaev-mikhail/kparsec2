@@ -34,7 +34,7 @@ abstract class SequenceFoldParser<T, A, Ctx>(val parsers: Iterable<Parser<T, A>>
         Parser<T, Ctx>,
         NamedParser<T, Ctx> {
     abstract fun initialContext(): Ctx
-    abstract fun Ctx.body(value: A): Ctx
+    abstract fun body(ctx: Ctx, value: A): Ctx
 
     override val name: String = parsers.joinToString(" ")
     override fun toString(): String = name
@@ -45,7 +45,7 @@ abstract class SequenceFoldParser<T, A, Ctx>(val parsers: Iterable<Parser<T, A>>
         for (element in parsers) {
             when (val current = element(self)) {
                 is ParseSuccess -> {
-                    context = context.body(current.result)
+                    context = body(context, current.result)
                     self = current.rest
                 }
                 is NoSuccess -> return current
@@ -61,28 +61,43 @@ fun <T, A, Ctx> sequenceFold(crossinline initialContext: () -> Ctx,
                              crossinline body: Ctx.(A) -> Ctx): Parser<T, Ctx> =
     object: SequenceFoldParser<T, A, Ctx>(parsers) {
         override fun initialContext(): Ctx = initialContext.invoke()
-        override fun Ctx.body(value: A): Ctx = body.invoke(this, value)
+        override fun body(ctx: Ctx, value: A): Ctx = body.invoke(ctx, value)
     }
+
+abstract class ManyFoldParser<T, A, Ctx>(val base: Parser<T, A>): Parser<T, Ctx> {
+    abstract fun initialContext(): Ctx
+    abstract fun body(ctx: Ctx, currentResult: A): Ctx
+
+    override fun invoke(input: Input<T>): ParseResult<T, Ctx> {
+        var self = input
+        var context = initialContext()
+        do {
+            when (val current = base(self)) {
+                is ParseSuccess -> {
+                    context = body(context, current.result)
+                    if (current.rest === self) break // do not attempt to repeat non-consuming parsers
+                    self = current.rest
+                }
+                is ParseFailure -> break
+                is ParseError -> return current
+            }
+        } while (self.hasNext())
+        return ParseSuccess(self, context)
+    }
+}
 
 internal inline
 fun <T, A, Ctx> manyFold(crossinline initialContext: () -> Ctx,
                          parser: Parser<T, A>,
-                         crossinline body: Ctx.(A) -> Ctx): Parser<T, Ctx> = namedParser("${parser}*") {
-    var self = it
-    var context = initialContext()
-    do {
-        when (val current = parser(self)) {
-            is ParseSuccess -> {
-                context = body(context, current.result)
-                if (current.rest === self) break // do not attempt to repeat non-consuming parsers
-                self = current.rest
-            }
-            is ParseFailure -> break
-            is ParseError -> return@namedParser current
+                         crossinline body: Ctx.(A) -> Ctx): Parser<T, Ctx> =
+    when (parser) {
+        is ManyFoldParser<*, *, *> -> (parser as Parser<T, A>).map { body(initialContext(), it) }
+        else -> object: ManyFoldParser<T, A, Ctx>(parser) {
+            override fun initialContext(): Ctx = initialContext.invoke()
+            override fun body(ctx: Ctx, currentResult: A): Ctx = body.invoke(ctx, currentResult)
         }
-    } while (self.hasNext())
-    ParseSuccess(self, context)
-}
+    }
+
 
 internal inline
 fun <T, A, Ctx> manyOneFold(crossinline initialContext: () -> Ctx,
