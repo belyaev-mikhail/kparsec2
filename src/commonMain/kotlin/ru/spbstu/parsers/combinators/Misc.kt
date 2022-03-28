@@ -6,19 +6,13 @@ import kotlin.experimental.ExperimentalTypeInference
 infix fun <T, A> Parser<T, A>.named(name: String) = namedParser(name, this)
 
 fun <T, A> namedParser(name: String, parser: Parser<T, A>): Parser<T, A> =
-    object : Parser<T, A> by parser, NamedParser<T, A> {
-        override val name: String
-            get() = name
-    }
+    object : Parser<T, A> by parser, AbstractNamedParser<T, A>(name) {}
 
 inline fun <T, A> namedParser(
     name: String,
     crossinline parser: (input: Input<T>) -> ParseResult<@UnsafeVariance T, A>
-): Parser<T, A> = object : NamedParser<T, A> {
-    override val name: String
-        get() = name
+): Parser<T, A> = object : AbstractNamedParser<T, A>(name) {
     override fun invoke(input: Input<T>): ParseResult<T, A> = parser(input)
-    override fun toString(): String = name
 }
 
 fun <T, A> Parser<T, A>.ignoreResult(): Parser<T, Unit> = map { Unit }

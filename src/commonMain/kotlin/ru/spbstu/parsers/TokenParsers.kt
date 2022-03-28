@@ -12,7 +12,7 @@ fun <T> any(): Parser<T, T> = namedParser("<any>") {
     ParseSuccess(it.advance(), current)
 }
 
-abstract class PredicateTokenParser<T>(override val name: String): Parser<T, T>, NamedParser<T, T> {
+abstract class PredicateTokenParser<T>(name: String): Parser<T, T>, AbstractNamedParser<T, T>(name) {
     abstract fun isValid(token: T): Boolean
     override fun invoke(input: Input<T>): ParseResult<T, T> {
         if (!input.hasNext()) return input.failure()

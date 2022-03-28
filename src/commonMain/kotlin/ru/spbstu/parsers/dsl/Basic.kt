@@ -5,19 +5,19 @@ import ru.spbstu.parsers.combinators.*
 import kotlin.jvm.JvmName
 
 operator fun <T, R> Parser<T, Iterable<R>>.plus(that: Parser<T, Iterable<R>>): Parser<T, List<R>> =
-    zipWith(this, that) { a, b -> a + b }
+    zipToCollectionParser<T, R> { addParser(this@plus); addParser(that) }
 
 @JvmName("plusSingle")
 operator fun <T, R> Parser<T, Iterable<R>>.plus(that: Parser<T, R>): Parser<T, List<R>> =
-    zipWith(this, that) { a, b -> a + b }
+    zipToCollectionParser<T, R> { addParser(this@plus); addParser(that) }
 
 @JvmName("plusSingleReversed")
 operator fun <T, R> Parser<T, R>.plus(that: Parser<T, Iterable<R>>): Parser<T, List<R>> =
-    zipWith(this, that) { a, b -> mutableListOf(a).apply { addAll(b) } as List<R> }
+    zipToCollectionParser<T, R> { addParser(this@plus); addParser(that) }
 
 @JvmName("plusSingleSingle")
 operator fun <T, R> Parser<T, R>.plus(that: Parser<T, R>): Parser<T, List<R>> =
-    zipWith(this, that) { a, b -> listOf(a, b) }
+    zipToCollectionParser<T, R> { addParser(this@plus); addParser(that) }
 
 @JvmName("plusUnit")
 operator fun <T, I: Iterable<Any?>> Parser<T, I>.plus(that: Parser<T, Unit>): Parser<T, I> =

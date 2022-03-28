@@ -35,6 +35,8 @@ inline fun <T, A, B> ParseResult<T, A>.map(body: (A) -> B): ParseResult<T, B> = 
     is NoSuccess -> this
 }
 
+fun <T, A> ParseResult<T, A>.ignoreResult(): ParseResult<T, Unit> = map {}
+
 inline fun <T, A, B> ParseResult<T, A>.flatMap(body: (A) -> ParseResult<T, B>): ParseResult<T, B> = when(this) {
     is ParseSuccess -> body(result)
     is NoSuccess -> this

@@ -64,7 +64,9 @@ fun <T, A, Ctx> sequenceFold(crossinline initialContext: () -> Ctx,
         override fun body(ctx: Ctx, value: A): Ctx = body.invoke(ctx, value)
     }
 
-abstract class ManyFoldParser<T, A, Ctx>(val base: Parser<T, A>): Parser<T, Ctx> {
+abstract class ManyFoldParser<T, A, Ctx>(val base: Parser<T, A>):
+        Parser<T, Ctx>,
+        AbstractNamedParser<T, Ctx>("$base*") {
     abstract fun initialContext(): Ctx
     abstract fun body(ctx: Ctx, currentResult: A): Ctx
 
