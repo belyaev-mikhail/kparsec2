@@ -4,71 +4,83 @@ import ru.spbstu.*
 import kotlin.jvm.JvmName
 
 private sealed interface Element<T, E> {
-    operator fun invoke(input: Input<T>, acc: MutableList<E>): ParseResult<T, Unit>
+    interface ElementVisitor<T, E> {
+        fun visitNo(parser: Parser<T, Unit>)
+        fun visitOne(parser: Parser<T, E>)
+        fun visitMany(parser: Parser<T, Iterable<E>>)
+    }
+
+    abstract infix fun accept(visitor: ElementVisitor<T, E>)
 }
 private data class NoElement<T, E>(val parser: Parser<T, Unit>): Element<T, E> {
-    override fun invoke(input: Input<T>, acc: MutableList<E>): ParseResult<T, Unit> =
-        parser(input)
+    override fun accept(visitor: Element.ElementVisitor<T, E>) = visitor.visitNo(parser)
 
     override fun toString(): String = parser.toString()
 }
 private data class OneElement<T, E>(val parser: Parser<T, E>): Element<T, E> {
-    override fun invoke(input: Input<T>, acc: MutableList<E>): ParseResult<T, Unit> =
-        when (val res = parser(input)) {
-            is ParseSuccess -> {
-                acc.add(res.result)
-                res.ignoreResult()
-            }
-            is NoSuccess -> res
-        }
+    override fun accept(visitor: Element.ElementVisitor<T, E>) = visitor.visitOne(parser)
     override fun toString(): String = parser.toString()
 }
 private data class ManyElements<T, E>(val parser: Parser<T, Iterable<E>>): Element<T, E> {
-    override fun invoke(input: Input<T>, acc: MutableList<E>): ParseResult<T, Unit> =
-        when (val res = parser(input)) {
-            is ParseSuccess -> {
-                acc.addAll(res.result)
-                res.ignoreResult()
-            }
-            is NoSuccess -> res
-        }
+    override fun accept(visitor: Element.ElementVisitor<T, E>) = visitor.visitMany(parser)
     override fun toString(): String = parser.toString()
 }
+
+private inline fun <T, E> Collection<Element<T, E>>.process(
+    input: Input<T>,
+    onNone: () -> Unit = {},
+    onOne: (E) -> Unit = {},
+    onMany: (Iterable<E>) -> Unit = {}
+): ParseResult<T, Unit> {
+    var currentInput = input
+    for (element in this) {
+        when(element) {
+            is NoElement -> {
+                when (val res = element.parser(currentInput)) {
+                    is NoSuccess -> return res
+                    is ParseSuccess -> {
+                        onNone()
+                        currentInput = res.rest
+                    }
+                }
+
+            }
+            is OneElement -> {
+                when (val res = element.parser(currentInput)) {
+                    is NoSuccess -> return res
+                    is ParseSuccess -> {
+                        onOne(res.result)
+                        currentInput = res.rest
+                    }
+                }
+            }
+            is ManyElements -> {
+                when (val res = element.parser(currentInput)) {
+                    is NoSuccess -> return res
+                    is ParseSuccess -> {
+                        onMany(res.result)
+                        currentInput = res.rest
+                    }
+                }
+            }
+        }
+    }
+    return currentInput.unitSuccess()
+}
+
 
 private abstract class ZipToCollectionParser<T, E, R>(val elements: List<Element<T, E>>):
     Parser<T, R>,
     AbstractNamedParser<T, R>(elements.joinToString(" + ")) {
 
     abstract override fun invoke(input: Input<T>): ParseResult<T, R>
-
-    fun invoke(input: Input<T>, acc: MutableList<E>): ParseResult<T, Unit> {
-        var currentInput = input
-        for (element in elements) {
-            when(val res = element(currentInput, acc)) {
-                is NoSuccess -> return res
-                is ParseSuccess -> {
-                    currentInput = res.rest
-                }
-            }
-        }
-        return ParseSuccess(currentInput, Unit)
-    }
 }
 
-private class ZipToCollectionParserToCollection<T, E>(elements: List<Element<T, E>>):
-        ZipToCollectionParser<T, E, List<E>>(elements) {
-    override fun invoke(input: Input<T>): ParseResult<T, List<E>> {
-        val acc = mutableListOf<E>()
-        return invoke(input, acc).map { acc }
-    }
-}
-
-private class ZipToCollectionParserToSingle<T, E>(elements: List<Element<T, E>>):
-    ZipToCollectionParser<T, E, E>(elements) {
-    override fun invoke(input: Input<T>): ParseResult<T, E> {
-        val acc = mutableListOf<E>()
-        return invoke(input, acc).map { acc.single() }
-    }
+private inline fun <T, E, R> ZipToCollectionParser(
+        elements: List<Element<T, E>>,
+        crossinline body: ZipToCollectionParser<T, E, R>.(Input<T>) -> ParseResult<T, R>
+) = object : ZipToCollectionParser<T, E, R>(elements) {
+    override fun invoke(input: Input<T>): ParseResult<T, R> = body(input)
 }
 
 class ZipToCollectionBuilder<T, E> {
@@ -99,12 +111,54 @@ class ZipToCollectionBuilder<T, E> {
         }
     }
 
-    fun build(): Parser<T, List<E>> = ZipToCollectionParserToCollection(collection)
-    fun buildSingle(): Parser<T, E> = ZipToCollectionParserToSingle(collection)
+    fun buildNoParser(): Parser<T, Unit> {
+        check(collection.all { it is NoElement })
+        return ZipToCollectionParser(collection) { input -> elements.process(input) }
+    }
+
+    fun buildSingleParser(): Parser<T, E> {
+        check(collection.none { it is ManyElements })
+        check(collection.count { it is OneElement } == 1)
+        return ZipToCollectionParser(collection) { input ->
+            var result: E? = null
+            elements.process(input, onOne = {
+                result = it
+            }).map { result!! }
+        }
+    }
+    fun buildSingleCollectionParser(): Parser<T, Iterable<E>> {
+        check(collection.none { it is OneElement })
+        check(collection.count { it is ManyElements } == 1)
+        return ZipToCollectionParser(collection) { input ->
+            var result: Iterable<E>? = null
+            elements.process(input, onMany = {
+                result = it
+            }).map { result!! }
+        }
+    }
+
+    fun buildGeneralParser(): Parser<T, List<E>> {
+        return ZipToCollectionParser(collection) { input ->
+            val resultCollection: MutableList<E> = mutableListOf()
+            elements.process(
+                input,
+                onOne = { resultCollection.add(it) },
+                onMany = { resultCollection.addAll(it) }
+            ).map { resultCollection as List<E> }
+        }
+    }
+
+    fun build(): Parser<T, *> {
+        val ones = collection.count { it is OneElement }
+        val manys = collection.count { it is ManyElements }
+        return when {
+            ones == 0 && manys == 0 -> buildNoParser()
+            ones == 1 && manys == 0 -> buildSingleParser()
+            ones == 0 && manys == 1 -> buildSingleCollectionParser()
+            else -> buildGeneralParser()
+        }
+    }
 }
 
-inline fun <T, E> zipToCollectionParser(body: ZipToCollectionBuilder<T, E>.() -> Unit): Parser<T, List<E>> =
+inline fun <T, E> zipToCollectionParser(body: ZipToCollectionBuilder<T, E>.() -> Unit): Parser<T, *> =
     ZipToCollectionBuilder<T, E>().apply(body).build()
-
-inline fun <T, E> zipToCollectionParserSingle(body: ZipToCollectionBuilder<T, E>.() -> Unit): Parser<T, E> =
-    ZipToCollectionBuilder<T, E>().apply(body).buildSingle()

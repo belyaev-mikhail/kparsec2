@@ -10,7 +10,7 @@ inline fun <T, A, B> Parser<T, A>.flatMap(crossinline body: (A) -> Parser<T, B>)
     this(it).chain { result, rest -> body(result)(rest) }
 }
 
-inline fun <T, A> Parser<T, A>.filter(expected: String? = null, crossinline body: (A) -> Boolean): Parser<T, A> = Parser {
+inline fun <T, A> Parser<T, A>.filter(expected: String? = null, crossinline body: (A) -> Boolean): Parser<T, A> = namedParser(expected ?: "<predicate>") {
     val trye = this(it)
     trye.flatMap { result -> if (body(result)) trye else it.failure(expected ?: "<predicate>") }
 }

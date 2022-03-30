@@ -5,39 +5,39 @@ import ru.spbstu.parsers.combinators.*
 import kotlin.jvm.JvmName
 
 operator fun <T, R> Parser<T, Iterable<R>>.plus(that: Parser<T, Iterable<R>>): Parser<T, List<R>> =
-    zipToCollectionParser<T, R> { addParser(this@plus); addParser(that) }
+    zipToCollectionParser<T, R> { addParser(this@plus); addParser(that) } as Parser<T, List<R>>
 
 @JvmName("plusSingle")
 operator fun <T, R> Parser<T, Iterable<R>>.plus(that: Parser<T, R>): Parser<T, List<R>> =
-    zipToCollectionParser<T, R> { addParser(this@plus); addParser(that) }
+    zipToCollectionParser<T, R> { addParser(this@plus); addParser(that) } as Parser<T, List<R>>
 
 @JvmName("plusSingleReversed")
 operator fun <T, R> Parser<T, R>.plus(that: Parser<T, Iterable<R>>): Parser<T, List<R>> =
-    zipToCollectionParser<T, R> { addParser(this@plus); addParser(that) }
+    zipToCollectionParser<T, R> { addParser(this@plus); addParser(that) } as Parser<T, List<R>>
 
 @JvmName("plusSingleSingle")
 operator fun <T, R> Parser<T, R>.plus(that: Parser<T, R>): Parser<T, List<R>> =
-    zipToCollectionParser<T, R> { addParser(this@plus); addParser(that) }
+    zipToCollectionParser<T, R> { addParser(this@plus); addParser(that) } as Parser<T, List<R>>
 
 @JvmName("plusUnit")
-operator fun <T, I: Iterable<Any?>> Parser<T, I>.plus(that: Parser<T, Unit>): Parser<T, I> =
-    zipWith(this, that) { a, _ -> a }
+operator fun <T, E, I: Iterable<E>> Parser<T, I>.plus(that: Parser<T, Unit>): Parser<T, I> =
+    zipToCollectionParser<T, E> { addParser(this@plus); addParser(that) } as Parser<T, I>
 
 @JvmName("plusUnitReversed")
-operator fun <T, I: Iterable<Any?>> Parser<T, Unit>.plus(that: Parser<T, I>): Parser<T, I> =
-    zipWith(this, that) { _, b -> b }
+operator fun <T, E, I: Iterable<E>> Parser<T, Unit>.plus(that: Parser<T, I>): Parser<T, I> =
+    zipToCollectionParser<T, E> { addParser(this@plus); addParser(that) } as Parser<T, I>
 
 @JvmName("single-plus-unit")
 operator fun <T, R> Parser<T, R>.plus(that: Parser<T, Unit>): Parser<T, R> =
-    zipWith(this, that) { a, _ -> a }
+    zipToCollectionParser<T, R> { addParser(this@plus); addParser(that) } as Parser<T, R>
 
 @JvmName("unit-plus-single")
 operator fun <T, R> Parser<T, Unit>.plus(that: Parser<T, R>): Parser<T, R> =
-    zipWith(this, that) { _, b -> b }
+    zipToCollectionParser<T, R> { addParser(this@plus); addParser(that) } as Parser<T, R>
 
 @JvmName("unit-plus-unit")
 operator fun <T> Parser<T, Unit>.plus(that: Parser<T, Unit>): Parser<T, Unit> =
-    zipWith(this, that) { _, _ -> }
+    zipToCollectionParser<T, T> { addParser(this@plus); addParser(that) } as Parser<T, Unit>
 
 operator fun <T, R> Parser<T, R>.unaryMinus(): Parser<T, Unit> = ignoreResult()
 

@@ -3,6 +3,10 @@ package ru.spbstu.ru.spbstu
 import ru.spbstu.CharLocation
 import ru.spbstu.Location
 import ru.spbstu.OffsetLocation
+import ru.spbstu.parsers.dsl.plus
+import ru.spbstu.parsers.dsl.unaryMinus
+import ru.spbstu.parsers.library.Numbers
+import ru.spbstu.parsers.library.Spaces
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -28,6 +32,8 @@ class LocationTest {
 
     @Test
     fun basic() {
+        val pp = (Numbers.decimalNumber + -Spaces.oneOrMoreSpaces + Numbers.decimalNumber)
+
         val lines = text.lines()
 
         assertEquals(

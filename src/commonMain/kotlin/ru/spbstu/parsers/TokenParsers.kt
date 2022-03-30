@@ -40,8 +40,11 @@ inline fun <T, reified S: T> token(expectedString: String = "${S::class}"): Pars
         override fun isValid(token: T): Boolean = token is S
     }.let { @Suppress("UNCHECKED_CAST") (it as Parser<T, S>) }
 
-data class TokenOneOfParser<T>(val expected: Set<T>): PredicateTokenParser<T>("<one of $expected>") {
+data class TokenOneOfParser<T>(val expected: Set<T>): PredicateTokenParser<T>(
+    expected.joinToString("", prefix = "[", postfix = "]")
+) {
     override fun isValid(token: T): Boolean = token in expected
+    override fun toString(): String = super<PredicateTokenParser>.toString()
 }
 
 fun <T> oneOf(tokens: Set<T>): Parser<T, T> = when(tokens.size) {
