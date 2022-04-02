@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.plugin.getKotlinPluginVersion
 
 plugins {
     kotlin("multiplatform") version "1.5.30"
+    id("org.jetbrains.kotlinx.benchmark") version "0.4.2"
 }
 
 group = "ru.spbstu"
@@ -13,16 +14,18 @@ repositories {
 }
 
 kotlin {
-    jvm {}
+    jvm {
+        compilations.create("benchmarks")
+    }
     js(LEGACY) {
-        nodejs {}
+        nodejs {
+            compilations.create("benchmarks")
+        }
         browser {}
     }
-    linuxX64 {}
-    /* Targets configuration omitted. 
-    *  To find out how to configure the targets, please follow the link:
-    *  https://kotlinlang.org/docs/reference/building-mpp-with-gradle.html#setting-up-targets */
-
+    linuxX64 {
+        compilations.create("benchmarks")
+    }
     sourceSets {
         commonMain {
             dependencies {
@@ -37,5 +40,34 @@ kotlin {
                 implementation(kotlin("test-annotations-common"))
             }
         }
+        val commonBenchmarks by creating {
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-benchmark-runtime:0.4.2")
+                dependsOn(commonMain.get())
+            }
+        }
+        all {
+            if (name.endsWith("Benchmarks") && this != commonBenchmarks) {
+                dependsOn(commonBenchmarks)
+            }
+        }
+    }
+}
+
+benchmark {
+    configurations {
+        val main by getting {
+            mode = "avgt"
+            reportFormat = "csv"
+            outputTimeUnit = "ns"
+        }
+    }
+
+    targets {
+        register("jvmBenchmarks")
+        register("jsBenchmarks")
+        register("linuxX64Benchmarks")
+//        register("js")
+//        register("native")
     }
 }

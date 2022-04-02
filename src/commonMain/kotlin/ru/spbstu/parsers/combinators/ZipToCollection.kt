@@ -111,14 +111,11 @@ class ZipToCollectionBuilder<T, E> {
         }
     }
 
-    fun buildNoParser(): Parser<T, Unit> {
-        check(collection.all { it is NoElement })
+    private fun buildNoParser(): Parser<T, Unit> {
         return ZipToCollectionParser(collection) { input -> elements.process(input) }
     }
 
-    fun buildSingleParser(): Parser<T, E> {
-        check(collection.none { it is ManyElements })
-        check(collection.count { it is OneElement } == 1)
+    private fun buildSingleParser(): Parser<T, E> {
         return ZipToCollectionParser(collection) { input ->
             var result: E? = null
             elements.process(input, onOne = {
@@ -126,9 +123,7 @@ class ZipToCollectionBuilder<T, E> {
             }).map { result!! }
         }
     }
-    fun buildSingleCollectionParser(): Parser<T, Iterable<E>> {
-        check(collection.none { it is OneElement })
-        check(collection.count { it is ManyElements } == 1)
+    private fun buildSingleCollectionParser(): Parser<T, Iterable<E>> {
         return ZipToCollectionParser(collection) { input ->
             var result: Iterable<E>? = null
             elements.process(input, onMany = {
@@ -137,7 +132,7 @@ class ZipToCollectionBuilder<T, E> {
         }
     }
 
-    fun buildGeneralParser(): Parser<T, List<E>> {
+    private fun buildGeneralParser(): Parser<T, List<E>> {
         return ZipToCollectionParser(collection) { input ->
             val resultCollection: MutableList<E> = mutableListOf()
             elements.process(
