@@ -15,9 +15,13 @@ open class SimpleBenchmark {
     var creator: String = ""
 
     lateinit var parser: Parser<Char, *>
+    lateinit var goodInput: Input<Char>
+    lateinit var fairInput: Input<Char>
+    lateinit var badInput: Input<Char>
 
     @Setup
     fun createAll() {
+
         parser = when(creator) {
             "string" -> sequence("abcd")
             "vararg" -> sequence('a', 'b', 'c', 'd')
@@ -40,26 +44,29 @@ open class SimpleBenchmark {
             }
             else -> throw IllegalStateException()
         }
+        goodInput = stringInput("abcd", CharLocationType.OFFSET)
+        fairInput = stringInput("abd*", CharLocationType.OFFSET)
+        badInput = stringInput("pliqdc", CharLocationType.OFFSET)
     }
 
     @Benchmark
     fun success(bh: Blackhole) {
         repeat(1000) {
-            bh.consume(parser.invoke(stringInput("abcd")).resultOrThrow)
+            bh.consume(parser.invoke(goodInput).resultOrThrow)
         }
     }
 
     @Benchmark
     fun partialFail(bh: Blackhole) {
         repeat(1000) {
-            bh.consume(parser.invoke(stringInput("abc*")))
+            bh.consume(parser.invoke(fairInput))
         }
     }
 
     @Benchmark
     fun totalFail(bh: Blackhole) {
         repeat(1000) {
-            bh.consume(parser.invoke(stringInput("")))
+            bh.consume(parser.invoke(badInput))
         }
     }
 }

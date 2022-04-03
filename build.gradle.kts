@@ -58,7 +58,7 @@ benchmark {
     configurations {
         val main by getting {
             mode = "avgt"
-            reportFormat = "csv"
+            reportFormat = "scsv"
             outputTimeUnit = "ns"
         }
     }

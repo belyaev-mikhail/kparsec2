@@ -1,6 +1,7 @@
 package ru.spbstu.parsers.combinators
 
 import ru.spbstu.*
+import ru.spbstu.wheels.NoStackThrowable
 import kotlin.experimental.ExperimentalTypeInference
 
 infix fun <T, A> Parser<T, A>.named(name: String) = namedParser(name, this)
@@ -22,7 +23,11 @@ class DoScope<T>(input: Input<T>) {
         private set
 
     operator fun <A> Parser<T, A>.invoke(): A {
-        val res = this(input).successOrThrow
+        val res = this(input)
+        when(res) {
+            is NoSuccess -> throw ParserDoException(res)
+            is ParseSuccess -> {}
+        }
         input = res.rest
         return res.result
     }
@@ -31,7 +36,7 @@ class DoScope<T>(input: Input<T>) {
     fun <A> tryParse(parser: Parser<T, A>): A? {
         val res = parser(input)
         when (res) {
-            is ParseError -> throw ParseException(res)
+            is ParseError -> throw ParserDoException(res)
             is ParseFailure -> return null
             is ParseSuccess -> {
                 input = res.rest
@@ -42,6 +47,8 @@ class DoScope<T>(input: Input<T>) {
     }
 }
 
+data class ParserDoException(val result: NoSuccess): NoStackThrowable()
+
 @OptIn(ExperimentalTypeInference::class)
 @BuilderInference
 inline fun <T, R> parserDo(crossinline body: DoScope<T>.() -> R): Parser<T, R> = Parser { input ->
@@ -49,7 +56,7 @@ inline fun <T, R> parserDo(crossinline body: DoScope<T>.() -> R): Parser<T, R> =
     try {
         val result = scope.body()
         ParseSuccess(result = result, rest = scope.input)
-    } catch (ex: ParseException) {
+    } catch (ex: ParserDoException) {
         ex.result
     }
 }

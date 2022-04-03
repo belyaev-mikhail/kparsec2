@@ -38,3 +38,46 @@ value class OffsetLocation<T>(val offset: Int = 0): Location<T> {
 
     override fun skip(tokens: Int): OffsetLocation<T> = OffsetLocation(offset + tokens)
 }
+
+interface LocationManager<T> {
+    fun start(): Location<T>
+    fun resolve(loc: Location<T>): Location<T>
+}
+
+class CharLocationManager(val source: Source<Char>): LocationManager<Char> {
+    inner class ManagedLocation(val offset: Int): Location<Char> {
+        override fun invoke(token: Char) = ManagedLocation(offset + 1)
+        override val canSkip: Boolean
+            get() = true
+        override fun skip(tokens: Int): ManagedLocation = ManagedLocation(offset + tokens)
+
+        override fun equals(other: Any?): Boolean = other is ManagedLocation && other.offset == offset
+        override fun hashCode(): Int = offset.hashCode()
+        override fun toString(): String = resolve(this).toString()
+    }
+
+    private val locationCache: MutableMap<Int, CharLocation> = mutableMapOf()
+
+    private fun resolve(loc: Int): CharLocation {
+        var cur = CharLocation()
+        var offset = 0
+        for (t in source) {
+            cur = cur(t)
+            ++offset
+            if (offset >= loc) break
+        }
+        return cur
+    }
+
+    override fun start(): Location<Char> = ManagedLocation(0)
+
+    override fun resolve(loc: Location<Char>): Location<Char> = when(loc) {
+        is ManagedLocation -> locationCache.getOrPut(loc.offset) { resolve(loc.offset) }
+        else -> loc
+    }
+}
+
+fun managedCharLocation(source: Source<Char>,
+                        locationManager: LocationManager<Char> = CharLocationManager(source)) =
+    locationManager.start()
+

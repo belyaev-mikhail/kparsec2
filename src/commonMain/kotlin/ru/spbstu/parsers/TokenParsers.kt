@@ -88,10 +88,10 @@ fun <T> sequence(tokens: Iterable<T>): Parser<T, List<T>> = when(tokens) {
 fun <T> sequence(tokens: Collection<T>): Parser<T, List<T>> = when(tokens.size) {
     1 -> token(tokens.single()).map { listOf(it) }
     else -> namedParser(tokens.joinToString(" ")) {
-        val sourceTokens = mutableListOf<T>()
+        val sourceTokens = ArrayList<T>(tokens.size)
         it.takeTo(sourceTokens, tokens.size)
         if (sourceTokens != tokens) it.failure("$tokens", "$sourceTokens")
-        ParseSuccess(it.drop(tokens.size), sourceTokens)
+        else ParseSuccess(it.drop(tokens.size), sourceTokens)
     }
 }
 

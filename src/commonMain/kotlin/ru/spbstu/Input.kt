@@ -58,6 +58,21 @@ class ParsedInput<T, R>(source: ParsedSource<T, R>): Input<R>(source) {
     override fun drop(n: Int): ParsedInput<T, R> = ParsedInput(parsedSource.drop(n))
 }
 
-fun stringInput(data: String) = SimpleInput(StringSource(data), CharLocation())
+enum class CharLocationType {
+    LINES {
+        override fun start(source: Source<Char>): Location<Char> = CharLocation()
+    },
+    OFFSET {
+        override fun start(source: Source<Char>): Location<Char> = OffsetLocation()
+    },
+    MANAGED {
+        override fun start(source: Source<Char>): Location<Char> = managedCharLocation(source)
+    };
+
+    abstract fun start(source: Source<Char>): Location<Char>
+}
+
+fun stringInput(data: String, locationType: CharLocationType = CharLocationType.LINES) =
+    SimpleInput(StringSource(data), CharLocation())
 fun <T0, T1> parsedInput(input: Input<T0>, parser: Parser<T0, T1>, ignore: Parser<T0, Unit>? = null): Input<T1> =
     ParsedInput(ParsedSource(input, parser, ignore))

@@ -72,7 +72,7 @@ fun Source<Char>.asCharSequence(): CharSequence = SourceAsCharSequence(this)
 fun <T> Source<T>.asTokenSequence(): Sequence<T> = Sequence { iterator() }
 
 fun Source<Char>.takeString(length: Int): String {
-    val sb = StringBuilder()
+    val sb = StringBuilder(length)
     takeTo(sb.asCollection(), length)
     return "$sb"
 }
