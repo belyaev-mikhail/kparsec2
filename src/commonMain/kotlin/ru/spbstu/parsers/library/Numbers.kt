@@ -1,8 +1,8 @@
 package ru.spbstu.parsers.library
 
 import ru.spbstu.parsers.combinators.map
-import ru.spbstu.parsers.manyOneAsString
-import ru.spbstu.parsers.oneOf
+import ru.spbstu.parsers.combinators.manyOneAsString
+import ru.spbstu.parsers.combinators.oneOf
 
 object Numbers {
     val binaryDigit = oneOf('0', '1')

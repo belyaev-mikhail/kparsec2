@@ -3,17 +3,17 @@ package ru.spbstu
 sealed class ParseResult<out T, out R>
 data class ParseSuccess<out T, out R>(val rest: Input<T>, val result: R): ParseResult<T, R>()
 sealed class NoSuccess: ParseResult<Nothing, Nothing>() {
-    abstract val expected: String
-    abstract val found: String
+    abstract val expected: Any?
+    abstract val found: Any?
     abstract val location: Location<*>
 }
 
-data class ParseFailure(override val expected: String,
-                        override val found: String,
+data class ParseFailure(override val expected: Any?,
+                        override val found: Any?,
                         override val location: Location<*>): NoSuccess()
 
-data class ParseError(override val expected: String,
-                      override val found: String,
+data class ParseError(override val expected: Any?,
+                      override val found: Any?,
                       override val location: Location<*>): NoSuccess()
 
 class ParseException(val result: NoSuccess): Exception("Failed to parse input: $result")

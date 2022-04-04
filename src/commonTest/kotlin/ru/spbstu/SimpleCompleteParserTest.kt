@@ -4,10 +4,9 @@ import ru.spbstu.*
 import ru.spbstu.parsers.combinators.*
 import ru.spbstu.parsers.combinators.oneOf
 import ru.spbstu.parsers.dsl.*
-import ru.spbstu.parsers.manyAsString
-import ru.spbstu.parsers.oneOf
-import ru.spbstu.parsers.sequence
-import ru.spbstu.parsers.token
+import ru.spbstu.parsers.combinators.manyAsString
+import ru.spbstu.parsers.combinators.sequence
+import ru.spbstu.parsers.combinators.token
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

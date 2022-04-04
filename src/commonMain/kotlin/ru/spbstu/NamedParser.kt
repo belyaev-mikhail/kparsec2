@@ -1,6 +1,6 @@
 package ru.spbstu
 
-internal interface NamedParser<T, R>: Parser<T, R> {
+interface NamedParser<T, R>: Parser<T, R> {
     val name: String
     override fun toString(): String
 

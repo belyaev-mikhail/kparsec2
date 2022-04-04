@@ -3,7 +3,7 @@ package ru.spbstu.parsers.combinators
 import ru.spbstu.*
 
 inline fun <T, A, B> Parser<T, A>.map(crossinline body: (A) -> B): Parser<T, B> = namedParser("$this") {
-    this(it).map(body)
+    this@map(it).map(body)
 }
 
 inline fun <T, A, B> Parser<T, A>.flatMap(crossinline body: (A) -> Parser<T, B>): Parser<T, B> = Parser {
@@ -20,7 +20,7 @@ inline fun <T, A> Parser<T, A>.filter(
 inline fun <T, A, B> Parser<T, A>.mapNotNull(
         expected: String = "($this)@filtered",
         crossinline body: (A) -> B?): Parser<T, B> = namedParser(expected) { input ->
-    when(val tryout = this(input)) {
+    when(val tryout = this@mapNotNull(input)) {
         is NoSuccess -> tryout
         is ParseSuccess -> {
             when(val mapped = body(tryout.result)) {

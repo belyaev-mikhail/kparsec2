@@ -5,11 +5,9 @@ import ru.spbstu.parsers.combinators.map
 import ru.spbstu.parsers.combinators.parserDo
 import ru.spbstu.parsers.combinators.sequence
 import ru.spbstu.parsers.dsl.plus
-import ru.spbstu.parsers.sequence
-import ru.spbstu.parsers.token
+import ru.spbstu.parsers.combinators.token
 
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 private fun String.toCharList() = toCharArray().asList()
 

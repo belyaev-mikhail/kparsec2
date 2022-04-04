@@ -113,7 +113,12 @@ fun <T, A, Ctx> manyOneFold(crossinline initialContext: () -> Ctx,
 fun <T, A> sequence(parsers: Iterable<Parser<T, A>>): Parser<T, List<A>> =
     sequenceFold({ mutableListOf() }, parsers) { apply { add(it) } }
 
-fun <T, A> sequence(vararg parsers: Parser<T, A>): Parser<T, List<A>> = sequence(parsers.asList())
+// this exists only to disambiguiate resolution ambiguities with sequence(Collection<Token>)
+fun <T, A> sequence(parsers: Collection<Parser<T, A>>): Parser<T, List<A>> =
+    sequence(parsers as Iterable<Parser<T, A>>)
+
+fun <T, A> sequence(vararg parsers: Parser<T, A>): Parser<T, List<A>> =
+    sequence(parsers.asList())
 
 fun <T, A> many(parser: Parser<T, A>): Parser<T, List<A>> =
     manyFold({ mutableListOf() }, parser) { apply { add(it) } }
@@ -141,7 +146,7 @@ fun <T, A> repeat(n: Int, parser: Parser<T, A>): Parser<T, List<A>> = namedParse
     val res = mutableListOf<A>()
     kotlin.repeat(n - 1) {
         val stableCurrentResult = currentResult
-        if (stableCurrentResult !is ParseSuccess) return@namedParser input.failure("$parser")
+        if (stableCurrentResult !is ParseSuccess) return@namedParser input.failure(parser)
         res += stableCurrentResult.result
         currentResult = parser(stableCurrentResult.rest)
     }

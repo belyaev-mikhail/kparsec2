@@ -4,10 +4,9 @@ import kotlinx.benchmark.*
 import ru.spbstu.parsers.combinators.flatMap
 import ru.spbstu.parsers.combinators.map
 import ru.spbstu.parsers.combinators.parserDo
-import ru.spbstu.parsers.sequence
 import ru.spbstu.parsers.combinators.sequence
 import ru.spbstu.parsers.dsl.plus
-import ru.spbstu.parsers.token
+import ru.spbstu.parsers.combinators.token
 
 @State(Scope.Benchmark)
 open class SimpleBenchmark {

@@ -1,6 +1,8 @@
 package ru.spbstu
 
 import ru.spbstu.parsers.*
+import ru.spbstu.parsers.combinators.failure
+import ru.spbstu.parsers.combinators.success
 import kotlin.test.*
 
 class ParseResultTest {

@@ -1,13 +1,10 @@
-package ru.spbstu.parsers
+package ru.spbstu.parsers.combinators
 
 import ru.spbstu.*
-import ru.spbstu.parsers.combinators.filter
-import ru.spbstu.parsers.combinators.map
-import ru.spbstu.parsers.combinators.namedParser
 import ru.spbstu.ParseError as ParseError
 
 fun <T> any(): Parser<T, T> = namedParser("<any>") {
-    if (!it.hasNext()) return@namedParser it.failure("<any>", "<end of input>")
+    if (!it.hasNext()) return@namedParser it.failure()
     val current = it.current
     ParseSuccess(it.advance(), current)
 }
@@ -70,7 +67,7 @@ fun <T> sequence(iterator: Iterable<T>, expectedString: String = "<predicate>"):
                 }
                 else -> {
                     result += current
-                    return@namedParser it.failure(expectedString, "$result")
+                    return@namedParser it.failure(name, result)
                 }
             }
         }
@@ -86,11 +83,12 @@ fun <T> sequence(tokens: Iterable<T>): Parser<T, List<T>> = when(tokens) {
     else -> sequence(tokens, expectedString = tokens.joinToString())
 }
 fun <T> sequence(tokens: Collection<T>): Parser<T, List<T>> = when(tokens.size) {
+    0 -> success(listOf())
     1 -> token(tokens.single()).map { listOf(it) }
     else -> namedParser(tokens.joinToString(" ")) {
         val sourceTokens = ArrayList<T>(tokens.size)
         it.takeTo(sourceTokens, tokens.size)
-        if (sourceTokens != tokens) it.failure("$tokens", "$sourceTokens")
+        if (sourceTokens != tokens) it.failure(name, sourceTokens)
         else ParseSuccess(it.drop(tokens.size), sourceTokens)
     }
 }
@@ -123,9 +121,9 @@ inline fun <T, R> choice(crossinline body: (T) -> Parser<T, R>): Parser<T, R> = 
     body(it.current).invoke(it.advance())
 }
 
-fun <T> not(tokenParser: Parser<T, T>): Parser<T, T> = Parser {
+fun <T> not(tokenParser: Parser<T, T>): Parser<T, T> = namedParser("!($tokenParser)") {
     when(val result = tokenParser(it)) {
-        is ParseSuccess -> it.failure("!${result.result}", "${result.result}")
+        is ParseSuccess -> it.failure()
         is ParseFailure -> ParseSuccess(it.advance(), it.current)
         is ParseError -> result
     }

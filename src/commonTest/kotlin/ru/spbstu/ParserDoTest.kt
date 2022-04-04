@@ -2,11 +2,10 @@ package ru.spbstu
 
 import ru.spbstu.parsers.combinators.*
 import ru.spbstu.parsers.dsl.or
-import ru.spbstu.parsers.dsl.plus
 import ru.spbstu.parsers.dsl.unaryMinus
 import ru.spbstu.parsers.library.Numbers
 import ru.spbstu.parsers.library.Spaces
-import ru.spbstu.parsers.token
+import ru.spbstu.parsers.combinators.token
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

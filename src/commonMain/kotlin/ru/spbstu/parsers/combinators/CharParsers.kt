@@ -1,9 +1,6 @@
-package ru.spbstu.parsers
+package ru.spbstu.parsers.combinators
 
 import ru.spbstu.*
-import ru.spbstu.parsers.combinators.*
-import ru.spbstu.parsers.util.StringBuilderCollection
-import ru.spbstu.parsers.util.concatToString
 
 fun oneOf(tokens: String): Parser<Char, Char> = when(tokens.length) {
     1 -> token(tokens.single())
@@ -15,7 +12,7 @@ fun sequence(tokens: String): Parser<Char, String> = when(tokens.length) {
     1 -> token(tokens.single()).map { it.toString() }
     else -> namedParser("\"$tokens\"") {
         val sourceTokens = it.takeString(tokens.length)
-        if (sourceTokens != tokens) it.failure(tokens, sourceTokens)
+        if (sourceTokens != tokens) it.failure(name, actual = sourceTokens)
         else ParseSuccess(it.drop(tokens.length), sourceTokens)
     }
 }

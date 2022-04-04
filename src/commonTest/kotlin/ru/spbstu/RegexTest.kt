@@ -1,6 +1,6 @@
 package ru.spbstu.ru.spbstu
 
-import ru.spbstu.parsers.regex
+import ru.spbstu.parsers.combinators.regex
 import ru.spbstu.resultOrThrow
 import ru.spbstu.invoke
 import ru.spbstu.parsers.combinators.zipWith

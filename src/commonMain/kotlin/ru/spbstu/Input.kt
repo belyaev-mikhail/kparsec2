@@ -29,13 +29,13 @@ class SimpleInput<out T>(source: Source<T>, override val location: Location<@Uns
     }
 }
 
-private fun <T> Input<T>.actualCurrentTokenDesc() = when {
+private fun <T> Input<T>.actualCurrentTokenDesc(): Any? = when {
     !hasNext() -> "<end of input>"
-    else -> "$current"
+    else -> current
 }
-fun <T> Input<T>.failure(expected: String, actual: String = actualCurrentTokenDesc()): ParseFailure =
+fun <T> Input<T>.failure(expected: Any?, actual: Any? = actualCurrentTokenDesc()): ParseFailure =
     ParseFailure(expected, actual, location)
-fun <T> Input<T>.error(expected: String, actual: String = actualCurrentTokenDesc()): ParseError =
+fun <T> Input<T>.error(expected: Any?, actual: Any? = actualCurrentTokenDesc()): ParseError =
     ParseError(expected, actual, location)
 fun <T> Input<T>.unitSuccess() = ParseSuccess(this, Unit)
 fun <T, R> Input<T>.success(value: R) = ParseSuccess(this, value)
@@ -73,6 +73,9 @@ enum class CharLocationType {
 }
 
 fun stringInput(data: String, locationType: CharLocationType = CharLocationType.LINES) =
-    SimpleInput(StringSource(data), CharLocation())
+    when(val source = StringSource(data)) {
+        else -> SimpleInput(source, locationType.start(source))
+    }
+
 fun <T0, T1> parsedInput(input: Input<T0>, parser: Parser<T0, T1>, ignore: Parser<T0, Unit>? = null): Input<T1> =
     ParsedInput(ParsedSource(input, parser, ignore))
