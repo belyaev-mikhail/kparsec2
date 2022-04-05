@@ -30,10 +30,10 @@ private fun <T> memoCell(nextFunction: () -> T?): MemoCell<T>? {
     return MemoCell(current) { memoCell(nextFunction) }
 }
 
-private fun fileToCell(path: Path, encoding: Charset): MemoCell<CharSequence>? {
+private fun fileToCell(path: Path, encoding: Charset, bufferSize: Int): MemoCell<CharSequence>? {
     val reader = Files.newBufferedReader(path, encoding)
     return memoCell {
-        val buf = CharArray(0xFFFF)
+        val buf = CharArray(bufferSize)
         val read = reader.read(buf)
         if (read == -1) null.also { reader.close() }
         else {
@@ -48,8 +48,8 @@ private constructor(
     val cells: MemoCell<CharSequence>?,
     val offset: Int
 ): Source<Char> {
-    constructor(path: Path, encoding: Charset = Charsets.UTF_8):
-        this(fileToCell(path, encoding), 0)
+    constructor(path: Path, encoding: Charset = Charsets.UTF_8, bufferSize: Int = DEFAULT_BUFFER_SIZE):
+        this(fileToCell(path, encoding, bufferSize), 0)
 
     private fun copy(cells: MemoCell<CharSequence>? = this.cells, offset: Int = this.offset) =
         FileSource(cells, offset)
@@ -90,18 +90,26 @@ private constructor(
         !hasNext() -> ""
         else -> "${currentBuffer.drop(offset)}..."
     }
+
+    companion object {
+        const val DEFAULT_BUFFER_SIZE = 0xffff
+    }
+
 }
 
 fun fileInput(file: Path, encoding: Charset = Charsets.UTF_8,
-              locationType: CharLocationType = CharLocationType.LINES) =
-    when(val source = FileSource(file, encoding)) {
+              locationType: CharLocationType = CharLocationType.LINES,
+              bufferSize: Int = FileSource.DEFAULT_BUFFER_SIZE) =
+    when(val source = FileSource(file, encoding, bufferSize)) {
         else -> SimpleInput(source, locationType.start(source))
     }
 
 fun fileInput(file: String, encoding: Charset = Charsets.UTF_8,
-              locationType: CharLocationType = CharLocationType.LINES) =
-    fileInput(Path(file), encoding, locationType)
+              locationType: CharLocationType = CharLocationType.LINES,
+              bufferSize: Int = FileSource.DEFAULT_BUFFER_SIZE) =
+    fileInput(Path(file), encoding, locationType, bufferSize)
 
 fun fileInput(file: File, encoding: Charset = Charsets.UTF_8,
-              locationType: CharLocationType = CharLocationType.LINES) =
-    fileInput(file.toPath(), encoding, locationType)
+              locationType: CharLocationType = CharLocationType.LINES,
+              bufferSize: Int = FileSource.DEFAULT_BUFFER_SIZE) =
+    fileInput(file.toPath(), encoding, locationType, bufferSize)

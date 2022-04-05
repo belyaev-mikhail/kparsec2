@@ -3,6 +3,7 @@ package ru.spbstu
 import ru.spbstu.parsers.dsl.*
 import ru.spbstu.parsers.*
 import ru.spbstu.parsers.combinators.*
+import ru.spbstu.wheels.joinToString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -12,11 +13,18 @@ class JsonParserTest {
     sealed interface Literal<T>: Token, JsonExpr {
         val data: T
     }
-    data class StringLiteral(override val data: String): Literal<String>
-    data class NumberLiteral(override val data: Double): Literal<Double>
-    data class BooleanLiteral(override val data: Boolean): Literal<Boolean>
+    data class StringLiteral(override val data: String): Literal<String> {
+        override fun toString(): String = "\"$data\""
+    }
+    data class NumberLiteral(override val data: Double): Literal<Double> {
+        override fun toString(): String = "$data"
+    }
+    data class BooleanLiteral(override val data: Boolean): Literal<Boolean> {
+        override fun toString(): String = "$data"
+    }
     object NullLiteral: Literal<Nothing?> {
         override val data: Nothing? = null
+        override fun toString(): String = "null"
     }
     enum class SyntaxToken(val rep: Char): Token, Parser<Token, Token> {
         LBracket('['), RBracket(']'),
@@ -104,9 +112,12 @@ class JsonParserTest {
     sealed interface JsonExpr
     data class JsonArray(val data: List<JsonExpr>): JsonExpr {
         constructor(vararg data: JsonExpr): this(data.asList())
+        override fun toString(): String = data.toString()
     }
     data class JsonObject(val data: Map<String, JsonExpr>): JsonExpr {
         constructor(vararg data: Pair<String, JsonExpr>): this(data.toMap())
+
+        override fun toString(): String = data.joinToString(prefix = "{", postfix = "}") { k, v -> "\"$k\": $v" }
     }
 
     object JsonGrammar {
