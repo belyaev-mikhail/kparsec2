@@ -128,10 +128,10 @@ class JsonParserTest {
                 -syntaxToken('}')
     }
 
+    val JSON = liftParser(JsonGrammar.expr, JsonTokens.token, JsonTokens.space)
+
     @Test
     fun testJsonParsing() {
-        val JSON = liftParser(JsonGrammar.expr, JsonTokens.token, JsonTokens.space)
-
         assertEquals(
             StringLiteral("Hello"),
             JSON("\"Hello\"").resultOrThrow
