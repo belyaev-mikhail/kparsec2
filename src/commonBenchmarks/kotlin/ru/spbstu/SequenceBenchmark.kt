@@ -8,10 +8,17 @@ import ru.spbstu.parsers.combinators.sequence
 import ru.spbstu.parsers.dsl.plus
 import ru.spbstu.parsers.combinators.token
 
+private const val STRING = "string"
+private const val VARARG = "vararg"
+private const val SEQUENCE = "sequence"
+private const val PLUS = "plus"
+private const val FLAT_MAP = "flatMap"
+private const val PARSER_DO = "parserDo"
+
 @State(Scope.Benchmark)
-open class SimpleBenchmark {
-    @Param("string", "vararg", "sequence", "plus", "flatMap", "parserDo")
-    var creator: String = ""
+open class SequenceBenchmark {
+    @Param(STRING, VARARG, SEQUENCE, PLUS, FLAT_MAP, PARSER_DO)
+    lateinit var creator: String
 
     lateinit var parser: Parser<Char, *>
     lateinit var goodInput: Input<Char>
@@ -22,11 +29,11 @@ open class SimpleBenchmark {
     fun createAll() {
 
         parser = when(creator) {
-            "string" -> sequence("abcd")
-            "vararg" -> sequence('a', 'b', 'c', 'd')
-            "sequence" -> sequence(token('a'), token('b'), token('c'), token('d'))
-            "plus" -> token('a') + token('b') + token('c') + token('d')
-            "flatMap" ->
+            STRING -> sequence("abcd")
+            VARARG -> sequence('a', 'b', 'c', 'd')
+            SEQUENCE -> sequence(token('a'), token('b'), token('c'), token('d'))
+            PLUS -> token('a') + token('b') + token('c') + token('d')
+            FLAT_MAP ->
                 token('a').flatMap { a ->
                     token('b').flatMap { b ->
                         token('c').flatMap { c ->
@@ -34,7 +41,7 @@ open class SimpleBenchmark {
                         }
                     }
                 }
-            "parserDo" -> parserDo {
+            PARSER_DO -> parserDo {
                 val a = parse(token('a'))
                 val b = parse(token('b'))
                 val c = parse(token('c'))
