@@ -1,7 +1,11 @@
-package ru.spbstu
+package ru.spbstu.ru.spbstu
 
+import ru.spbstu.JsonParserTest
+import ru.spbstu.assertSuccess
+import ru.spbstu.fileInput
 import ru.spbstu.parsers.liftParser
-import java.nio.file.Path
+import ru.spbstu.stringInput
+import java.io.StringReader
 import java.nio.file.Paths
 import kotlin.io.path.readText
 import kotlin.test.Test
@@ -10,7 +14,11 @@ import kotlin.test.assertEquals
 class FileSourceTest {
     @Test
     fun simple() {
-        val JSON = liftParser(JsonParserTest.JsonGrammar.expr, JsonParserTest.JsonTokens.token, JsonParserTest.JsonTokens.space)
+        val JSON = liftParser(
+            JsonParserTest.JsonGrammar.expr,
+            JsonParserTest.JsonTokens.token,
+            JsonParserTest.JsonTokens.space
+        )
         val file = Paths.get(javaClass.classLoader.getResource("Tryout.json")!!.toURI())
         val result = JSON(fileInput(file, bufferSize = 256))
         assertSuccess(result)

@@ -1,7 +1,10 @@
 package ru.spbstu
 
-import java.io.File
+import ru.spbstu.wheels.defaultEquals
+import java.io.*
 import java.nio.CharBuffer
+import java.nio.channels.Channels
+import java.nio.channels.ReadableByteChannel
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
@@ -30,12 +33,15 @@ private fun <T> memoCell(nextFunction: () -> T?): MemoCell<T>? {
     return MemoCell(current) { memoCell(nextFunction) }
 }
 
-private fun fileToCell(path: Path, encoding: Charset, bufferSize: Int): MemoCell<CharSequence>? {
-    val reader = Files.newBufferedReader(path, encoding)
+private fun fileToCell(path: Path, encoding: Charset, bufferSize: Int): MemoCell<CharSequence>? =
+    readerToCell(Files.newBufferedReader(path, encoding), bufferSize, closeOnFinish = true)
+
+private fun readerToCell(reader: Reader, bufferSize: Int,
+                         closeOnFinish: Boolean): MemoCell<CharSequence>? {
     return memoCell {
         val buf = CharArray(bufferSize)
         val read = reader.read(buf)
-        if (read == -1) null.also { reader.close() }
+        if (read == -1) null.also { if (closeOnFinish) reader.close() }
         else {
             val cb = CharBuffer.wrap(buf, 0, read).limit(read)
             cb.asReadOnlyBuffer() as CharSequence
@@ -45,11 +51,13 @@ private fun fileToCell(path: Path, encoding: Charset, bufferSize: Int): MemoCell
 
 class FileSource
 private constructor(
-    val cells: MemoCell<CharSequence>?,
-    val offset: Int
+    private val cells: MemoCell<CharSequence>?,
+    private val offset: Int
 ): Source<Char> {
     constructor(path: Path, encoding: Charset = Charsets.UTF_8, bufferSize: Int = DEFAULT_BUFFER_SIZE):
         this(fileToCell(path, encoding, bufferSize), 0)
+    constructor(reader: Reader, bufferSize: Int = DEFAULT_BUFFER_SIZE, closeOnFinish: Boolean = true):
+        this(readerToCell(reader, bufferSize, closeOnFinish), 0)
 
     private fun copy(cells: MemoCell<CharSequence>? = this.cells, offset: Int = this.offset) =
         FileSource(cells, offset)
@@ -113,3 +121,29 @@ fun fileInput(file: File, encoding: Charset = Charsets.UTF_8,
               locationType: CharLocationType = CharLocationType.LINES,
               bufferSize: Int = FileSource.DEFAULT_BUFFER_SIZE) =
     fileInput(file.toPath(), encoding, locationType, bufferSize)
+
+fun fileInput(stream: InputStream,
+              encoding: Charset = Charsets.UTF_8,
+              locationType: CharLocationType = CharLocationType.LINES,
+              bufferSize: Int = FileSource.DEFAULT_BUFFER_SIZE,
+              closeOnFinish: Boolean = false) =
+    when(val source = FileSource(stream.reader(encoding), bufferSize, closeOnFinish)) {
+        else -> SimpleInput(source, locationType.start(source))
+    }
+
+fun fileInput(reader: Reader,
+              locationType: CharLocationType = CharLocationType.LINES,
+              bufferSize: Int = FileSource.DEFAULT_BUFFER_SIZE,
+              closeOnFinish: Boolean = false) =
+    when(val source = FileSource(reader, bufferSize, closeOnFinish)) {
+        else -> SimpleInput(source, locationType.start(source))
+    }
+
+fun fileInput(channel: ReadableByteChannel,
+              encoding: Charset = Charsets.UTF_8,
+              locationType: CharLocationType = CharLocationType.LINES,
+              bufferSize: Int = FileSource.DEFAULT_BUFFER_SIZE,
+              closeOnFinish: Boolean = false) =
+    when(val source = FileSource(Channels.newReader(channel, encoding), bufferSize, closeOnFinish)) {
+        else -> SimpleInput(source, locationType.start(source))
+    }
