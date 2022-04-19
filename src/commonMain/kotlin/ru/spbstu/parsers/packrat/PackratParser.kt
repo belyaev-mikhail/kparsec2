@@ -1,14 +1,14 @@
 package ru.spbstu.parsers.packrat
 
-import ru.spbstu.AbstractNamedParser
-import ru.spbstu.Input
-import ru.spbstu.ParseResult
-import ru.spbstu.Parser
+import ru.spbstu.*
 
 class PackratParser<T, R>(val inner: Parser<T, R>): AbstractNamedParser<T, R>("${inner}"), Parser<T, R> {
     override fun invoke(input: Input<T>): ParseResult<T, R> = when (input) {
-        !is PackratInput -> inner(input)
-        else -> input.getOrPut(inner) { inner(input) }
+        !is CompoundInput -> invoke(packrat(input))
+        else -> {
+            val packrat: PackratInput<T> by input
+            packrat.getOrPut(inner) { inner(input) }
+        }
     }
 }
 
