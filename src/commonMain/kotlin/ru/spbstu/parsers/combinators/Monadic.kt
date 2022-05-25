@@ -13,7 +13,7 @@ inline fun <T, A, B> Parser<T, A>.flatMap(crossinline body: (A) -> Parser<T, B>)
 inline fun <T, A> Parser<T, A>.filter(
         expected: String = "($this)@filtered",
         crossinline body: (A) -> Boolean): Parser<T, A> = namedParser(expected) {
-    val trye = this(it)
+    val trye = this@filter(it)
     trye.flatMap { result -> if (body(result)) trye else it.failure(expected) }
 }
 

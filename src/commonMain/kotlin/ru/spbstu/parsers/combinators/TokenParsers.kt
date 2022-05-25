@@ -28,6 +28,7 @@ inline fun <T> token(expectedString: String = "<predicate>", crossinline predica
 
 data class TokenEqualityParser<T>(val expected: T): PredicateTokenParser<T>("$expected") {
     override fun isValid(token: T): Boolean = token == expected
+    override fun toString(): String = super.toString()
 }
 
 fun <T> token(value: T): Parser<T, T> = TokenEqualityParser(value)
@@ -41,7 +42,7 @@ data class TokenOneOfParser<T>(val expected: Set<T>): PredicateTokenParser<T>(
     expected.joinToString("", prefix = "[", postfix = "]")
 ) {
     override fun isValid(token: T): Boolean = token in expected
-    override fun toString(): String = super<PredicateTokenParser>.toString()
+    override fun toString(): String = super.toString()
 }
 
 fun <T> oneOf(tokens: Set<T>): Parser<T, T> = when(tokens.size) {

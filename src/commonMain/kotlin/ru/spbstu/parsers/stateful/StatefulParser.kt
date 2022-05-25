@@ -1,6 +1,7 @@
 package ru.spbstu.parsers.stateful
 
 import ru.spbstu.*
+import ru.spbstu.parsers.combinators.filter
 import ru.spbstu.parsers.combinators.namedParser
 import ru.spbstu.wheels.Option
 import ru.spbstu.wheels.map
@@ -33,3 +34,6 @@ inline fun <reified S> stateModifyIfSet(crossinline body: (Option<S>) -> S): Par
         val currentState = Option.ofNullable(input.getComponentOrNull(key)).map { it.state }
         stateful(input, body(currentState)).unitSuccess()
     }
+
+inline fun <reified S> stateRequire(crossinline predicate: (S) -> Boolean): Parser<Any?, S> =
+    stateGet<S>().filter("stateRequire", predicate)
