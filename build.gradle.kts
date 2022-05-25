@@ -1,7 +1,9 @@
 import org.jetbrains.kotlin.gradle.plugin.getKotlinPluginVersion
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinOnlyTarget
+import org.jetbrains.kotlin.platform.CommonPlatforms
 
 plugins {
-    kotlin("multiplatform") version "1.5.30"
+    kotlin("multiplatform") version "1.6.21"
     id("org.jetbrains.kotlinx.benchmark") version "0.4.2"
 }
 
@@ -14,18 +16,17 @@ repositories {
 }
 
 kotlin {
-    jvm {
-        compilations.create("benchmarks")
-    }
+    jvm {}
     js(LEGACY) {
-        nodejs {
-            compilations.create("benchmarks")
-        }
-        browser {}
+        nodejs { }
+        browser { }
     }
-    linuxX64 {
-        compilations.create("benchmarks")
+    linuxX64 {}
+
+    targets.all {
+        if (this != metadata {}) compilations.create("benchmarks")
     }
+
     sourceSets {
         commonMain {
             dependencies {

@@ -1,14 +1,53 @@
 package ru.spbstu
 
-import ru.spbstu.wheels.defaultEquals
 import java.io.*
+import java.lang.ref.SoftReference
+import java.lang.ref.WeakReference
 import java.nio.CharBuffer
 import java.nio.channels.Channels
+import java.nio.channels.FileChannel
 import java.nio.channels.ReadableByteChannel
 import java.nio.charset.Charset
+import java.nio.charset.CharsetDecoder
 import java.nio.file.Files
+import java.nio.file.OpenOption
 import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 import kotlin.io.path.Path
+
+data class WeakLazy<T: Any>(val compute: () -> T, var ref: WeakReference<T>? = null): Lazy<T> {
+    private fun create(): T {
+        val obj = compute()
+        this.ref = WeakReference(obj)
+        return obj
+    }
+
+    fun get(): T {
+        val ref = ref ?: return create()
+        return ref.get() ?: return create()
+    }
+
+    override val value: T
+        get() = get()
+
+    override fun isInitialized(): Boolean = when (val ref = ref) {
+        null -> false
+        else -> ref.get() != null
+    }
+}
+
+data class SoftLazy<T: Any>(val compute: () -> T, var ref: SoftReference<T>? = null) {
+    private fun create(): T {
+        val obj = compute()
+        this.ref = SoftReference(obj)
+        return obj
+    }
+
+    fun get(): T {
+        val ref = ref ?: return create()
+        return ref.get() ?: return create()
+    }
+}
 
 private class MemoCell<out T> private constructor(val value: T, var next: Any?) {
     constructor(value: T, next: () -> MemoCell<T>?): this(value, next as Any?)
