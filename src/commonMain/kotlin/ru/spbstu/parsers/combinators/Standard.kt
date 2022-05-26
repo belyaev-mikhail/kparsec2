@@ -131,7 +131,7 @@ fun <T, A> manyOne(parser: Parser<T, A>): Parser<T, List<A>> =
     manyOneFold({ mutableListOf() }, parser) { apply { add(it) } }
 
 inline fun <T, A> recover(base: Parser<T, A>, crossinline defaultValue: () -> A): Parser<T, A> =
-    namedParser("$base?") {
+    namedParser({ "$base?" }) {
         when (val res = base(it)) {
             is ParseFailure -> it.success(defaultValue())
             else -> res
@@ -140,7 +140,7 @@ inline fun <T, A> recover(base: Parser<T, A>, crossinline defaultValue: () -> A)
 
 fun <T, A> optional(parser: Parser<T, A>): Parser<T, A?> = recover(parser) { null }
 
-fun <T, A> repeat(n: Int, parser: Parser<T, A>): Parser<T, List<A>> = namedParser("$parser * $n") { input ->
+fun <T, A> repeat(n: Int, parser: Parser<T, A>): Parser<T, List<A>> = namedParser(lazyName = { "$parser * $n" }) { input ->
     if (n == 0) return@namedParser input.success(listOf())
     var currentResult = parser(input)
     val res = mutableListOf<A>()
@@ -159,4 +159,4 @@ fun <T, A> separatedBy(base: Parser<T, A>, sep: Parser<T, Unit>): Parser<T, List
             val acc = mutableListOf(it)
             manyFold({ acc }, zipWith(sep, base) { _, r -> r }) { add(it); this }
         }
-    ) { emptyList() }
+    ) { emptyList() } named { "($base){$sep}" }

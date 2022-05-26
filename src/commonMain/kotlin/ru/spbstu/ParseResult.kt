@@ -1,5 +1,8 @@
 package ru.spbstu
 
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
+
 sealed class ParseResult<out T, out R>
 data class ParseSuccess<out T, out R>(val rest: Input<T>, val result: R): ParseResult<T, R>()
 sealed class NoSuccess: ParseResult<Nothing, Nothing>() {
@@ -45,4 +48,13 @@ inline fun <T, A, B> ParseResult<T, A>.flatMap(body: (A) -> ParseResult<T, B>): 
 inline fun <T, A, B> ParseResult<T, A>.chain(body: (A, Input<T>) -> ParseResult<T, B>): ParseResult<T, B> = when(this) {
     is ParseSuccess -> body(result, rest)
     is NoSuccess -> this
+}
+
+@OptIn(ExperimentalContracts::class)
+inline fun <T, R> ParseResult<T, R>.enforceSuccess(body: (NoSuccess) -> Nothing) {
+    contract { returns() implies (this@enforceSuccess is ParseSuccess<T, R>) }
+    when(this) {
+        is NoSuccess -> body(this)
+        else -> {}
+    }
 }

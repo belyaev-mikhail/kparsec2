@@ -1,10 +1,13 @@
 package ru.spbstu.parsers.stateful
 
 import ru.spbstu.*
+import ru.spbstu.parsers.combinators.DoScope
 import ru.spbstu.parsers.combinators.filter
 import ru.spbstu.parsers.combinators.namedParser
 import ru.spbstu.wheels.Option
 import ru.spbstu.wheels.map
+import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.*
 
 inline fun <reified S> stateGet(): Parser<Any?, S> = namedParser("stateGet") { input ->
     when (input) {
@@ -37,3 +40,11 @@ inline fun <reified S> stateModifyIfSet(crossinline body: (Option<S>) -> S): Par
 
 inline fun <reified S> stateRequire(crossinline predicate: (S) -> Boolean): Parser<Any?, S> =
     stateGet<S>().filter("stateRequire", predicate)
+
+inline fun <T, reified S> DoScope<T>.parserState() = object : ReadWriteProperty<Any?, S> {
+    override fun getValue(thisRef: Any?, property: KProperty<*>): S = parse(stateGet<S>())
+
+    override fun setValue(thisRef: Any?, property: KProperty<*>, value: S) {
+        parse(stateSet(value))
+    }
+}

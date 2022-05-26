@@ -34,23 +34,39 @@ inline fun <T, A, B> Parser<T, A>.mapNotNull(
 inline fun <T, A, B, R> zipWith(left: Parser<T, A>,
                                 right: Parser<T, B>,
                                 crossinline body: (A, B) -> R): Parser<T, R> =
-    left.flatMap { l -> right.map { r -> body(l, r) } } named ("$left + $right")
+    namedParser({"$left + $right"}) {
+        left(it).chain { l, it ->
+            right(it).chain { r, it ->
+                it.success(body(l, r))
+            }
+        }
+    }
 
 inline fun <T, A, B, C, R> zipWith(left: Parser<T, A>,
                                    mid: Parser<T, B>,
                                    right: Parser<T, C>,
                                    crossinline body: (A, B, C) -> R): Parser<T, R> =
-    left.flatMap { l -> mid.flatMap { m -> right.map { r -> body(l, m, r) } } }
+    namedParser({"$left + $mid + $right"}) {
+        left(it).chain { l, it ->
+            mid(it).chain { m, it ->
+                right(it).chain { r, it ->
+                    it.success(body(l, m, r))
+                }
+            }
+        }
+    }
 
 inline fun <T, A, B, C, D, R> zipWith(ll: Parser<T, A>,
                                       lm: Parser<T, B>,
                                       rm: Parser<T, C>,
                                       rr: Parser<T, D>,
                                       crossinline body: (A, B, C, D) -> R): Parser<T, R> =
-    ll.flatMap { llx ->
-        lm.flatMap { lmx ->
-            rm.flatMap { rmx ->
-                rr.map { rrx -> body(llx, lmx, rmx, rrx) }
+    namedParser({"$ll + $lm + $rm + $rr"}) {
+        ll(it).chain { e1, it ->
+            lm(it).chain { e2, it ->
+                rm(it).chain { e3, it ->
+                    rr(it).chain { e4, it -> it.success(body(e1, e2, e3, e4)) }
+                }
             }
         }
     }

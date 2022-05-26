@@ -2,7 +2,7 @@ package ru.spbstu.parsers.stateful
 
 import ru.spbstu.*
 
-class StatefulInput<S>(val state: S): InputComponent {
+class StatefulInput<S>(val state: S): InputComponent<StatefulInput<S>> {
     companion object {
         inline fun <reified S> Key(): InputComponent.Key<StatefulInput<S>> = InputComponent.Key()
     }

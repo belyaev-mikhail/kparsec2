@@ -2,14 +2,14 @@ package ru.spbstu.parsers.combinators
 
 import ru.spbstu.*
 
-fun <T, R> peek(parser: Parser<T, R>): Parser<T, R> = namedParser("$parser") {
+fun <T, R> peek(parser: Parser<T, R>): Parser<T, R> = namedParser(lazyName = { "$parser" }) {
     when(val res = parser(it)) {
         is ParseSuccess -> res.copy(rest = it)
         else -> res
     }
 }
 
-fun <T> not(parser: Parser<T, Any?>): Parser<T, Unit> = namedParser("!($parser)") {
+fun <T> not(parser: Parser<T, Any?>): Parser<T, Unit> = namedParser(lazyName = { "!($parser)" }) {
     when(val res = parser(it)) {
         is ParseSuccess -> it.failure()
         is ParseFailure -> it.unitSuccess()
