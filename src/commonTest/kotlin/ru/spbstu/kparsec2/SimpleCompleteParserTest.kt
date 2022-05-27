@@ -1,13 +1,8 @@
 package ru.spbstu.kparsec2
 
-import ru.spbstu.*
-import ru.spbstu.kparsec2.*
 import ru.spbstu.kparsec2.parsers.combinators.*
-import ru.spbstu.parsers.combinators.*
-import ru.spbstu.parsers.dsl.*
-import ru.spbstu.kparsec2.parsers.combinators.manyAsString
-import ru.spbstu.kparsec2.parsers.combinators.token
 import ru.spbstu.kparsec2.parsers.dsl.or
+import ru.spbstu.kparsec2.parsers.dsl.plus
 import ru.spbstu.kparsec2.parsers.dsl.unaryMinus
 import kotlin.test.Test
 import kotlin.test.assertEquals

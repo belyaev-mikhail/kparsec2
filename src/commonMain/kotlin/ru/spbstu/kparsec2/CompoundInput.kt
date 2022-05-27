@@ -21,7 +21,8 @@ interface InputComponent<Self: InputComponent<Self>> {
         }
         @PublishedApi
         internal data class SimpleKey<T: InputComponent<T>>(override val type: KType): AbstractKey<T>()
-        inline fun <reified T: InputComponent<T>> Key(): Key<T> = SimpleKey(typeOf<T>())
+        inline fun <reified T> tptt(): KType = typeOf<T>()
+        inline fun <reified T: InputComponent<T>> Key(): Key<T> = SimpleKey(tptt<T>())
     }
 }
 

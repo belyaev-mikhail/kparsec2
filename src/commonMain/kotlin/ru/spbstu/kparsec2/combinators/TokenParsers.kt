@@ -8,7 +8,7 @@ fun <T> any(): Parser<T, T> = namedParser("<any>") {
     ParseSuccess(it.advance(), current)
 }
 
-abstract class PredicateTokenParser<T>(name: String): Parser<T, T>, AbstractNamedParser<T, T>(name) {
+abstract class PredicateTokenParser<T>(name: String): AbstractNamedParser<T, T>(name) {
     abstract fun isValid(token: T): Boolean
     override fun invoke(input: Input<T>): ParseResult<T, T> {
         if (!input.hasNext()) return input.failure()
@@ -27,7 +27,7 @@ inline fun <T> token(expectedString: String = "<predicate>", crossinline predica
 
 data class TokenEqualityParser<T>(val expected: T): PredicateTokenParser<T>("$expected") {
     override fun isValid(token: T): Boolean = token == expected
-    override fun toString(): String = super.toString()
+    override fun toString(): String = name
 }
 
 fun <T> token(value: T): Parser<T, T> = TokenEqualityParser(value)
