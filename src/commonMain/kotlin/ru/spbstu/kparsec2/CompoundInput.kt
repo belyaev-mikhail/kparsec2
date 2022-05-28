@@ -1,5 +1,6 @@
 package ru.spbstu.kparsec2
 
+import kotlinx.warnings.Warnings
 import ru.spbstu.wheels.hashCombine
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -47,10 +48,12 @@ class CompoundInput<T>(val base: Input<T>,
         getComponent()
 
     inline fun <T: InputComponent<T>> getComponentOrNull(key: InputComponent.Key<T>): T? =
-        components[key.type] as T?
+        @Suppress(Warnings.UNCHECKED_CAST)
+        (components[key.type] as T?)
 
     operator fun <T: InputComponent<T>> get(key: InputComponent.Key<T>) =
-        components[key.type] as T
+        @Suppress(Warnings.UNCHECKED_CAST)
+        (components[key.type] as T)
 
     override fun equals(other: Any?): Boolean = when (other) {
         is CompoundInput<*> -> base == other.base && components == other.components

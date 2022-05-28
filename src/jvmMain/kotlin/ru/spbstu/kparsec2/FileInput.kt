@@ -3,6 +3,7 @@ package ru.spbstu
 import ru.spbstu.kparsec2.CharLocationType
 import ru.spbstu.kparsec2.SimpleInput
 import ru.spbstu.kparsec2.Source
+import ru.spbstu.wheels.collections.asCharSequence
 import java.io.*
 import java.lang.ref.SoftReference
 import java.lang.ref.WeakReference
@@ -80,10 +81,7 @@ private fun readerToCell(reader: Reader, bufferSize: Int,
         val buf = CharArray(bufferSize)
         val read = reader.read(buf)
         if (read == -1) null.also { if (closeOnFinish) reader.close() }
-        else {
-            val cb = CharBuffer.wrap(buf, 0, read).limit(read)
-            cb.asReadOnlyBuffer() as CharSequence
-        }
+        else buf.asCharSequence(0, read)
     }
 }
 

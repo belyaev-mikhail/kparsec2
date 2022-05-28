@@ -1,5 +1,6 @@
 package ru.spbstu.kparsec2.parsers.combinators
 
+import kotlinx.warnings.Warnings
 import ru.spbstu.kparsec2.*
 
 fun <T> any(): Parser<T, T> = namedParser("<any>") {
@@ -32,10 +33,9 @@ data class TokenEqualityParser<T>(val expected: T): PredicateTokenParser<T>("$ex
 
 fun <T> token(value: T): Parser<T, T> = TokenEqualityParser(value)
 
+@Suppress(Warnings.UNCHECKED_CAST)
 inline fun <T, reified S: T> token(expectedString: String = "${S::class}"): Parser<T, S> =
-    object : PredicateTokenParser<T>(expectedString) {
-        override fun isValid(token: T): Boolean = token is S
-    }.let { @Suppress("UNCHECKED_CAST") (it as Parser<T, S>) }
+    token<T>(expectedString) { it is S } as Parser<T, S>
 
 data class TokenOneOfParser<T>(val expected: Set<T>): PredicateTokenParser<T>(
     expected.joinToString("", prefix = "[", postfix = "]")

@@ -36,7 +36,7 @@ abstract class SequenceFoldParser<T, A, Ctx>(val parsers: Iterable<Parser<T, A>>
     abstract fun initialContext(): Ctx
     abstract fun body(ctx: Ctx, value: A): Ctx
 
-    override val name: String = parsers.joinToString(" ")
+    override val name: String = parsers.joinToString(" + ")
     override fun toString(): String = name
 
     override fun invoke(input: Input<T>): ParseResult<T, Ctx> {
@@ -66,7 +66,7 @@ fun <T, A, Ctx> sequenceFold(crossinline initialContext: () -> Ctx,
 
 abstract class ManyFoldParser<T, A, Ctx>(val base: Parser<T, A>):
         Parser<T, Ctx>,
-        AbstractNamedParser<T, Ctx>("$base*") {
+        AbstractNamedParser<T, Ctx>("($base)*") {
     abstract fun initialContext(): Ctx
     abstract fun body(ctx: Ctx, currentResult: A): Ctx
 
@@ -132,7 +132,7 @@ fun <T, A> manyOne(parser: Parser<T, A>): Parser<T, List<A>> =
     manyOneFold({ mutableListOf() }, parser) { apply { add(it) } }
 
 inline fun <T, A> recover(base: Parser<T, A>, crossinline defaultValue: () -> A): Parser<T, A> =
-    namedParser({ "$base?" }) {
+    namedParser({ "($base)?" }) {
         when (val res = base(it)) {
             is ParseFailure -> it.success(defaultValue())
             else -> res
@@ -141,7 +141,7 @@ inline fun <T, A> recover(base: Parser<T, A>, crossinline defaultValue: () -> A)
 
 fun <T, A> optional(parser: Parser<T, A>): Parser<T, A?> = recover(parser) { null }
 
-fun <T, A> repeat(n: Int, parser: Parser<T, A>): Parser<T, List<A>> = namedParser(lazyName = { "$parser * $n" }) { input ->
+fun <T, A> repeat(n: Int, parser: Parser<T, A>): Parser<T, List<A>> = namedParser(lazyName = { "($parser) * $n" }) { input ->
     if (n == 0) return@namedParser input.success(listOf())
     var currentResult = parser(input)
     val res = mutableListOf<A>()

@@ -10,14 +10,14 @@ class FileSourceTest {
     @Test
     fun simple() {
         val JSON = liftParser(
-            JsonParserTest.JsonGrammar.expr,
-            JsonParserTest.JsonTokens.token,
-            JsonParserTest.JsonTokens.space
+            JsonGrammar.expr,
+            JsonTokens.token,
+            JsonTokens.space
         )
         val file = Paths.get(javaClass.classLoader.getResource("Tryout.json")!!.toURI())
         val result = JSON(fileInput(file, bufferSize = 256))
         assertSuccess(result)
-        val r: JsonParserTest.JsonExpr = result.result
+        val r: JsonExpr = result.result
         val result2 = JSON(stringInput("$r"))
         assertSuccess(result2)
         assertEquals(result.result, result2.result)

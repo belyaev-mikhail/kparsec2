@@ -1,16 +1,17 @@
 package ru.spbstu.kparsec2.parsers.combinators
 
 import ru.spbstu.kparsec2.*
+import ru.spbstu.kparsec2.util.quoteString
 
 fun oneOf(tokens: String): Parser<Char, Char> = when(tokens.length) {
     1 -> token(tokens.single())
-    else -> token("<one of \"$tokens\">") { it in tokens }
+    else -> token("<one of ${quoteString(tokens)}>") { it in tokens }
 }
 
 fun sequence(tokens: String): Parser<Char, String> = when(tokens.length) {
     0 -> success("")
     1 -> token(tokens.single()).map { it.toString() }
-    else -> namedParser("\"$tokens\"") {
+    else -> namedParser(quoteString(tokens)) {
         val sourceTokens = it.takeString(tokens.length)
         if (sourceTokens != tokens) it.failure(name, actual = sourceTokens)
         else ParseSuccess(it.drop(tokens.length), sourceTokens)

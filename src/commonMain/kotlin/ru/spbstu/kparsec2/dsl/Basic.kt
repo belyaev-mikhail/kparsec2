@@ -1,5 +1,7 @@
+@file:Suppress(Warnings.UNCHECKED_CAST)
 package ru.spbstu.kparsec2.parsers.dsl
 
+import kotlinx.warnings.Warnings
 import ru.spbstu.kparsec2.Parser
 import ru.spbstu.kparsec2.parsers.combinators.*
 import kotlin.jvm.JvmName

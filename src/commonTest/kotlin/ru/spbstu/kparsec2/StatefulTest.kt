@@ -12,6 +12,7 @@ import ru.spbstu.kparsec2.parsers.stateful.stateGet
 import ru.spbstu.kparsec2.parsers.stateful.stateModifyIfSet
 import ru.spbstu.kparsec2.parsers.stateful.stateSet
 import ru.spbstu.wheels.getOrElse
+import kotlin.reflect.KProperty
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -35,30 +36,40 @@ class StatefulTest {
 
     data class Tree(val value: String, val children: List<Tree> = listOf())
 
-    object TreeGrammar {
+    abstract class ParsingDecorator<T> {
+        abstract fun <R> transform(parser: Parser<T, R>, name: String): Parser<T, R>
+
+        inline operator fun <R> Parser<T, R>.getValue(thisRef: Any?, prop: KProperty<*>): Parser<T, R> =
+            transform(this, prop.name)
+    }
+
+    object TreeGrammar : ParsingDecorator<Char>() {
+        override fun <R> transform(parser: Parser<Char, R>, name: String): Parser<Char, R> =
+            namedParser(name, packrat(parser))
+
         data class Indent(val amount: Int = 0)
 
-        val indent: Parser<Char, Indent> = packrat(parserDo {
+        val indent: Parser<Char, Indent> by parserDo {
             newline()
             val ws = spaces()
             var indent: Indent by parserState<Char, Indent>()
             val res = Indent(ws.length - indent.amount)
             indent = Indent(ws.length)
             res
-        }) named "indent"
+        }
 
-        val plusIndent = indent.filter("indent>0") { it.amount > 0 }
-        val minusIndent = eof or indent.filter("indent<0") { it.amount < 0 }
-        val level = indent.filter("indent==0") { it.amount == 0 }
+        val plusIndent by indent.filter("indent>0") { it.amount > 0 }
+        val minusIndent by eof or indent.filter("indent<0") { it.amount < 0 }
+        val level by indent.filter("indent==0") { it.amount == 0 }
 
-        val ident = manyOneAsString(oneOf('a'..'z'))
+        val ident by manyOneAsString(oneOf('a'..'z'))
 
-        val tree: Parser<Char, Tree> = zipWith(ident, optional(lazyParser { body })) { v, ch ->
+        val tree: Parser<Char, Tree> by zipWith(ident, optional(lazyParser { body })) { v, ch ->
             Tree(v.toString(), ch.orEmpty())
         }
-        val body = -plusIndent + separatedBy(tree, -optional(-level)) + -minusIndent
+        val body by -plusIndent + separatedBy(tree, -optional(-level)) + -minusIndent
 
-        val whole = packrat(stateSet(Indent(0)) + tree + eof)
+        val whole by stateSet(Indent(0)) + tree + eof
     }
 
     @Test
@@ -73,6 +84,8 @@ class StatefulTest {
                b
                  d
                c
+               e
+               f
         """.trimIndent()
         )
 
@@ -82,7 +95,9 @@ class StatefulTest {
                 Tree("b", listOf(
                     Tree("d")
                 )),
-                Tree("c")
+                Tree("c"),
+                Tree("e"),
+                Tree("f")
             )),
             pp.result
         )

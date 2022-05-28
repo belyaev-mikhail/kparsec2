@@ -1,5 +1,7 @@
+@file:Suppress(Warnings.NAME_SHADOWING)
 package ru.spbstu.kparsec2.parsers.combinators
 
+import kotlinx.warnings.Warnings
 import ru.spbstu.kparsec2.*
 
 inline fun <T, A, B> Parser<T, A>.map(crossinline body: (A) -> B): Parser<T, B> = namedParser("$this") {
