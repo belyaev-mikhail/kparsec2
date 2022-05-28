@@ -4,7 +4,7 @@ package ru.spbstu.kparsec2.parsers.combinators
 import kotlinx.warnings.Warnings
 import ru.spbstu.kparsec2.*
 
-inline fun <T, A, B> Parser<T, A>.map(crossinline body: (A) -> B): Parser<T, B> = namedParser("$this") {
+inline infix fun <T, A, B> Parser<T, A>.map(crossinline body: (A) -> B): Parser<T, B> = namedParser({ "$this" }) {
     this@map(it).map(body)
 }
 
@@ -72,3 +72,22 @@ inline fun <T, A, B, C, D, R> zipWith(ll: Parser<T, A>,
             }
         }
     }
+
+data class Zipped2<A, B>(val first: A, val second: B)
+class ZippedParser2<T, A, B>(val first: Parser<T, A>, val second: Parser<T, B>):
+    NamedParser<T, Zipped2<A, B>>,
+    Parser<T, Zipped2<A, B>> by zipWith(first, second, ::Zipped2) {
+
+    override val name: String
+        get() = "$first + $second"
+
+    override fun toString(): String = name
+}
+
+fun <T, A, B> zip(first: Parser<T, A>, second: Parser<T, B>): ZippedParser2<T, A, B> =
+    ZippedParser2(first, second)
+infix fun <T, A, B> Parser<T, A>.zipTo(that: Parser<T, B>): ZippedParser2<T, A, B> =
+    ZippedParser2(this, that)
+
+inline infix fun <T, A, B, R> ZippedParser2<T, A, B>.map(crossinline body: (A, B) -> R): Parser<T, R> =
+    zipWith(first, second, body)

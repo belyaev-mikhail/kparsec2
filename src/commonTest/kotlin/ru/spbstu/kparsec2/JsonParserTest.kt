@@ -80,21 +80,28 @@ object JsonGrammar {
     val expr: Parser<Token, JsonExpr> = lazyParser {
         arr or obj or simpleExpr
     }
-    fun syntaxToken(ch: Char): Parser<Token, Unit> = -SyntaxToken.valueOf(ch)!!
+    fun tok(ch: Char): Parser<Token, Unit> = -SyntaxToken.valueOf(ch)!!
 
-    val simpleExpr: Parser<Token, Literal> = token<Token, Literal>()
-    val manyExpr: Parser<Token, List<JsonExpr>> = expr sepBy syntaxToken(',')
-    val arr: Parser<Token, JsonExpr> =
-        syntaxToken('[') + manyExpr.map(::JsonArray) + syntaxToken(']')
-    val objEntry: Parser<Token, Pair<String, JsonExpr>>  = zipWith(
-        token<Token, StringLiteral>(),
-        -SyntaxToken.Colon,
-        expr
-    ) { key: StringLiteral, _, value: JsonExpr -> key.data to value }
+    val simpleExpr =
+        token<Token, Literal>()
 
-    val obj: Parser<Token, JsonExpr> = syntaxToken('{') +
-            (objEntry sepBy -syntaxToken(',')).map { JsonObject(it.toMap()) } +
-            syntaxToken('}')
+    val arrayBody =
+        expr sepBy tok(',') map ::JsonArray
+
+    val arr =
+        tok('[') + arrayBody + tok(']')
+
+    val objectKey =
+        token<Token, StringLiteral>() map StringLiteral::data
+
+    val objEntry =
+        objectKey + tok(':') zipTo expr map ::jsonObjectEntry
+
+    val objectBody =
+        objEntry sepBy tok(',') map ::JsonObject
+
+    val obj: Parser<Token, JsonExpr> =
+        tok('{') + objectBody + tok('}')
 }
 
 class JsonParserTest {

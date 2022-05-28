@@ -40,8 +40,12 @@ data class JsonArray(val data: List<JsonExpr>): JsonExpr {
     constructor(vararg data: JsonExpr): this(data.asList())
     override fun toString(): String = data.toString()
 }
+
+fun jsonObjectEntry(lit: String, value: JsonExpr) = Pair(lit, value)
+
 data class JsonObject(val data: Map<String, JsonExpr>): JsonExpr {
     constructor(vararg data: Pair<String, JsonExpr>): this(data.toMap())
+    constructor(data: Iterable<Pair<String, JsonExpr>>): this(data.toMap())
 
     override fun toString(): String = data.joinToString(prefix = "{", postfix = "}") { k, v -> "\"$k\": $v" }
 }

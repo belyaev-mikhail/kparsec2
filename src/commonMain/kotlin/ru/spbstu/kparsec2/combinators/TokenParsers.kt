@@ -34,7 +34,7 @@ data class TokenEqualityParser<T>(val expected: T): PredicateTokenParser<T>("$ex
 fun <T> token(value: T): Parser<T, T> = TokenEqualityParser(value)
 
 @Suppress(Warnings.UNCHECKED_CAST)
-inline fun <T, reified S: T> token(expectedString: String = "${S::class}"): Parser<T, S> =
+inline fun <T, reified S: T> token(expectedString: String = "${S::class.simpleName}"): Parser<T, S> =
     token<T>(expectedString) { it is S } as Parser<T, S>
 
 data class TokenOneOfParser<T>(val expected: Set<T>): PredicateTokenParser<T>(
