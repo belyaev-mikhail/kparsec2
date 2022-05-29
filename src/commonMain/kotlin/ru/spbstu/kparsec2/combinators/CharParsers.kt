@@ -30,7 +30,7 @@ inline fun manyOneAsString(expected: String, crossinline pred: (Char) -> Boolean
 fun <T> manyOneAsString(token: Parser<T, Char>): Parser<T, CharSequence> =
     manyOneFold({ StringBuilder() }, token) { append(it) }
 
-@ExperimentalStdlibApi
+@OptIn(ExperimentalStdlibApi::class)
 fun regex(re: Regex): Parser<Char, MatchResult> = namedParser("regex(${re.pattern})") body@{
     val res = re.matchAt(it.asCharSequence(), 0)
         ?: return@body it.failure("regex(${re.pattern})")
@@ -38,5 +38,4 @@ fun regex(re: Regex): Parser<Char, MatchResult> = namedParser("regex(${re.patter
     ParseSuccess(shifted, res)
 }
 
-@ExperimentalStdlibApi
 fun regex(re: String): Parser<Char, MatchResult> = regex(Regex(re))
