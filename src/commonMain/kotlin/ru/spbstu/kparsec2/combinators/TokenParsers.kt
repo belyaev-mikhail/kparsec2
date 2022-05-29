@@ -3,13 +3,27 @@ package ru.spbstu.kparsec2.parsers.combinators
 import kotlinx.warnings.Warnings
 import ru.spbstu.kparsec2.*
 
-fun <T> any(): Parser<T, T> = namedParser("<any>") {
-    if (!it.hasNext()) return@namedParser it.failure()
-    val current = it.current
-    ParseSuccess(it.advance(), current)
+/*
+* Marker interface marking that we always only consume 1 token
+* */
+interface SingleTokenParser<T> : Parser<T, T>
+
+internal object AnyParser: SingleTokenParser<Any?>, NamedParser<Any?, Any?> {
+    override val name: String
+        get() = "<any>"
+
+    override fun toString(): String = name
+
+    override fun invoke(input: Input<Any?>): ParseResult<Any?, Any?> {
+        if (!input.hasNext()) return input.failure()
+        val current = input.current
+        return ParseSuccess(input.advance(), current)
+    }
 }
 
-abstract class PredicateTokenParser<T>(name: String): AbstractNamedParser<T, T>(name) {
+fun <T> any(): Parser<T, T> = @Suppress(Warnings.UNCHECKED_CAST) (AnyParser as Parser<T, T>)
+
+abstract class PredicateTokenParser<T>(name: String): SingleTokenParser<T>, AbstractNamedParser<T, T>(name) {
     abstract fun isValid(token: T): Boolean
     override fun invoke(input: Input<T>): ParseResult<T, T> {
         if (!input.hasNext()) return input.failure()
@@ -85,7 +99,7 @@ fun <T> sequence(tokens: Iterable<T>): Parser<T, List<T>> = when(tokens) {
 fun <T> sequence(tokens: Collection<T>): Parser<T, List<T>> = when(tokens.size) {
     0 -> success(listOf())
     1 -> token(tokens.single()).map { listOf(it) }
-    else -> namedParser({ tokens.joinToString(" ") }) {
+    else -> namedParser({ tokens.joinToString(" + ") }) {
         val sourceTokens = ArrayList<T>(tokens.size)
         it.takeTo(sourceTokens, tokens.size)
         if (sourceTokens != tokens) it.failure(name, sourceTokens)
