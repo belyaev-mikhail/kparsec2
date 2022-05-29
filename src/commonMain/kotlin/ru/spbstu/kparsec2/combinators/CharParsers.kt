@@ -19,13 +19,13 @@ fun sequence(tokens: String): Parser<Char, String> = when(tokens.length) {
 }
 
 inline fun manyAsString(expected: String, crossinline pred: (Char) -> Boolean): Parser<Char, CharSequence> =
-    manyFold({ StringBuilder() }, token("expected", pred)) { append(it) } named expected
+    manyFold({ StringBuilder() }, token(expected, pred)) { append(it) } named expected
 
 fun <T> manyAsString(token: Parser<T, Char>): Parser<T, CharSequence> =
     manyFold({ StringBuilder() }, token) { append(it) }
 
 inline fun manyOneAsString(expected: String, crossinline pred: (Char) -> Boolean): Parser<Char, CharSequence> =
-    manyOneFold({ StringBuilder() }, token("expected", pred)) { append(it) } named expected
+    manyOneFold({ StringBuilder() }, token(expected, pred)) { append(it) } named expected
 
 fun <T> manyOneAsString(token: Parser<T, Char>): Parser<T, CharSequence> =
     manyOneFold({ StringBuilder() }, token) { append(it) }

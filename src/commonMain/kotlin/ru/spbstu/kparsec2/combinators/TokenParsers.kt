@@ -38,7 +38,7 @@ inline fun <T, reified S: T> token(expectedString: String = "${S::class.simpleNa
     token<T>(expectedString) { it is S } as Parser<T, S>
 
 data class TokenOneOfParser<T>(val expected: Set<T>): PredicateTokenParser<T>(
-    expected.joinToString("", prefix = "[", postfix = "]")
+    expected.joinToString("", prefix = "<one of [", postfix = "]>")
 ) {
     override fun isValid(token: T): Boolean = token in expected
     override fun toString(): String = super.toString()
@@ -85,7 +85,7 @@ fun <T> sequence(tokens: Iterable<T>): Parser<T, List<T>> = when(tokens) {
 fun <T> sequence(tokens: Collection<T>): Parser<T, List<T>> = when(tokens.size) {
     0 -> success(listOf())
     1 -> token(tokens.single()).map { listOf(it) }
-    else -> namedParser(tokens.joinToString(" ")) {
+    else -> namedParser({ tokens.joinToString(" ") }) {
         val sourceTokens = ArrayList<T>(tokens.size)
         it.takeTo(sourceTokens, tokens.size)
         if (sourceTokens != tokens) it.failure(name, sourceTokens)
