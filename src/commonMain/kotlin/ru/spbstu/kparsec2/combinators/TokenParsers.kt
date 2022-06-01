@@ -33,6 +33,9 @@ abstract class PredicateTokenParser<T>(name: String): SingleTokenParser<T>, Abst
             else -> input.failure()
         }
     }
+
+    // avoiding KT-52553 KJS / IR: diamond hierarchy with super.toString produces stack overflow in runtime
+    override fun toString(): String = super<AbstractNamedParser>.toString()
 }
 
 inline fun <T> token(expectedString: String = "<predicate>", crossinline predicate: (T) -> Boolean): Parser<T, T> =
