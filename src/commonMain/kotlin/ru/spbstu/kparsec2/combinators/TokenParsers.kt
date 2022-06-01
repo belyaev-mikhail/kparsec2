@@ -135,6 +135,10 @@ inline fun <T, R> choice(crossinline body: (T) -> Parser<T, R>): Parser<T, R> = 
     body(it.current).invoke(it.advance())
 }
 
+inline fun <T, R> peekChoice(crossinline body: (T) -> Parser<T, R>): Parser<T, R> = Parser {
+    body(it.current).invoke(it)
+}
+
 fun <T> not(tokenParser: Parser<T, T>): Parser<T, T> = namedParser("!($tokenParser)") {
     when(val result = tokenParser(it)) {
         is ParseSuccess -> it.failure()

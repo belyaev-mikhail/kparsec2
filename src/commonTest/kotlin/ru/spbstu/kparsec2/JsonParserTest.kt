@@ -2,6 +2,7 @@ package ru.spbstu.kparsec2
 
 import ru.spbstu.kparsec2.parsers.combinators.*
 import ru.spbstu.kparsec2.parsers.dsl.*
+import ru.spbstu.kparsec2.util.quoteChar
 import ru.spbstu.wheels.joinToString
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -71,7 +72,28 @@ object JsonTokens {
 
     val space = -token<Char> { it.isWhitespace() }
 
-    val token = syntaxToken or string or number or boolean or nullLit
+    val token = run {
+        val lookupTable = arrayOfNulls<Parser<Char, Token>>(256)
+
+        for ((c, p) in SyntaxToken.charMap) {
+            lookupTable[c.code] = any<Char>().map { p }
+        }
+        lookupTable['"'.code] = string
+        lookupTable['t'.code] = boolean
+        lookupTable['f'.code] = boolean
+        lookupTable['n'.code] = nullLit
+        for (c in "01293456789eE+-") lookupTable[c.code] = number
+
+        val fallback = oneOf(lookupTable.filterNotNullTo(mutableSetOf()))
+
+        peekChoice<Char, Token> {
+            lookupTable.getOrNull(it.code) ?:
+                when {
+                    it.isDigit() -> number // it may still be some weird kind of digit not in '0'..'9'
+                    else -> failure("$fallback", quoteChar(it))
+                }
+        }
+    }
 
     fun jsonTokenInput(s: String) = parsedInput(stringInput(s), token, space)
 }

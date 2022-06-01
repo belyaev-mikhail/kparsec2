@@ -28,6 +28,9 @@ fun <T, A> oneOf(parsers: Iterable<Parser<T, A>>): Parser<T, A> = OneOfParser(
     }
 )
 
+// this is only for disambiguation with Set<T> overload
+fun <T, A> oneOf(parsers: Set<Parser<T, A>>): Parser<T, A> = oneOf(parsers as Iterable<Parser<T, A>>)
+
 fun <T, A> oneOf(vararg parsers: Parser<T, A>): Parser<T, A> = oneOf(parsers.asList())
 
 abstract class SequenceFoldParser<T, A, Ctx>(val parsers: Iterable<Parser<T, A>>):
