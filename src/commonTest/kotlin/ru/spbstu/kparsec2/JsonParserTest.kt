@@ -13,14 +13,14 @@ object JsonTokens {
 
     // rfc7159 number grammar
     object NumberGrammar {
-        val minus: Parser<Char, Char> = token('-')
-        val plus: Parser<Char, Char> = token('+')
-        val zero: Parser<Char, Char> = token('0')
-        val decimalPoint: Parser<Char, Char> = token('.')
-        val digit19: Parser<Char, Char> = oneOf('1'..'9')
-        val digit = token(expectedString = "digit") { it: Char -> it.isDigit() }
+        val minus = token('-')
+        val plus = token('+')
+        val zero = token('0')
+        val decimalPoint = token('.')
+        val digit19 = oneOf('1'..'9')
+        val digit = oneOf('0'..'9')
         val digits: Parser<Char, List<Char>> = many(digit)
-        val e: Parser<Char, Char> = oneOf("eE")
+        val e = oneOf("eE")
         val exp: Parser<Char, List<Char>> = e + (minus or plus) + digits
         val frac: Parser<Char, List<Char>> = decimalPoint + digits
         val int: Parser<Char, List<Char>> = zero.map { listOf(it) } or (digit19 + digits)

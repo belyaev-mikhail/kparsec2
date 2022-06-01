@@ -139,10 +139,27 @@ inline fun <T, R> peekChoice(crossinline body: (T) -> Parser<T, R>): Parser<T, R
     body(it.current).invoke(it)
 }
 
-fun <T> not(tokenParser: Parser<T, T>): Parser<T, T> = namedParser("!($tokenParser)") {
-    when(val result = tokenParser(it)) {
-        is ParseSuccess -> it.failure()
-        is ParseFailure -> ParseSuccess(it.advance(), it.current)
-        is ParseError -> result
-    }
+data class TokenInequalityParser<T>(val token: T): PredicateTokenParser<T>("!$token") {
+    override fun isValid(token: T): Boolean = token != this.token
+    override fun toString(): String = super.toString()
 }
+
+fun <T> notToken(value: T): Parser<T, T> = TokenInequalityParser(value)
+
+data class TokenNotOneOfParser<T>(val expected: Set<T>): PredicateTokenParser<T>(
+    expected.joinToString("", prefix = "<not one of [", postfix = "]>")
+) {
+    override fun isValid(token: T): Boolean = token !in expected
+    override fun toString(): String = super.toString()
+}
+
+fun <T> notOneOf(tokens: Set<T>): Parser<T, T> = when(tokens.size) {
+    1 -> notToken(tokens.single())
+    else -> TokenNotOneOfParser(tokens)
+}
+
+fun <T> notOneOf(vararg tokens: T): Parser<T, T> = when(tokens.size) {
+    1 -> notToken(tokens.single())
+    else -> notOneOf(tokens.toSet())
+}
+fun <T> notOneOf(tokens: Iterable<T>): Parser<T, T> = notOneOf(tokens.toSet())
