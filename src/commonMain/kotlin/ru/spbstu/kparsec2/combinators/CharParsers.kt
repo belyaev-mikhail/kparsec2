@@ -8,6 +8,11 @@ fun oneOf(tokens: String): Parser<Char, Char> = when(tokens.length) {
     else -> token("<one of ${quoteString(tokens)}>") { it in tokens }
 }
 
+fun notOneOf(tokens: String): Parser<Char, Char> = when(tokens.length) {
+    1 -> notToken(tokens.single())
+    else -> token("<not one of ${quoteString(tokens)}>") { it !in tokens }
+}
+
 fun sequence(tokens: String): Parser<Char, String> = when(tokens.length) {
     0 -> success("")
     1 -> token(tokens.single()).map { it.toString() }

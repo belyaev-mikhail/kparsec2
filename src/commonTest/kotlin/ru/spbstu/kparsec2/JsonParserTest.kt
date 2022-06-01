@@ -48,7 +48,7 @@ object JsonTokens {
         val quote = token('\"')
         val escape = token('\\')
 
-        val unescaped = token<Char> { it: Char -> it !in "\"\\" }
+        val unescaped = notOneOf("\"\\")
         val escapee = oneOf(escapables).map {
             when(it) {
                 'b' -> '\b'
@@ -59,7 +59,7 @@ object JsonTokens {
                 else -> it
             }
         }
-        val uescapee = -oneOf("uU") + (oneOf(('0'..'9') + ('a'..'f') + ('A'..'F')) * 4).map {
+        val uescapee = -token('u') + (oneOf(('0'..'9') + ('a'..'f') + ('A'..'F')) * 4).map {
             it.joinToString("").toInt(16).toChar()
         }
         val char = unescaped or (-escape + (escapee or uescapee))
